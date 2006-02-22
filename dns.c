@@ -3,6 +3,10 @@
 #include <glib.h>
 #include "dnsd.h"
 
+void dns_push_rr(struct dnsres *res, const struct backend_rr *rr)
+{
+}
+
 static void g_list_free_ent(void *data, void *user_data)
 {
 	g_free(data);

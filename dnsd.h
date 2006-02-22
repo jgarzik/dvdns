@@ -50,6 +50,15 @@ struct dnsres {
 	int			query_rc;
 };
 
+struct backend_rr {
+	const unsigned char	*name;
+	const unsigned char	*domain_name;
+	const unsigned char	*type;
+	const unsigned char	*class;
+	int			ttl;
+	const void		*rdata;
+	unsigned int		rdata_len;
+};
 
 /* backend.c */
 extern void backend_init(void);
@@ -59,6 +68,7 @@ extern void backend_query(void *data, void *user_data);
 /* dns.c */
 extern void dnsres_free(struct dnsres *res);
 extern struct dnsres *dns_message(const char *buf, unsigned int buflen);
+extern void dns_push_rr(struct dnsres *res, const struct backend_rr *rr);
 
 /* socket.c */
 extern void init_net(void);
