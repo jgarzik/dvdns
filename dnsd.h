@@ -48,5 +48,7 @@ extern int backend_query(struct dnsres *res, const struct dns_msg_hdr *hdr);
 extern void dnsres_free(struct dnsres *res);
 extern struct dnsres *dns_message(const char *buf, unsigned int buflen);
 
+/* socket.c */
+extern void init_net(void);
 
 #endif /* __DNSD_H__ */

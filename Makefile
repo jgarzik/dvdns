@@ -10,7 +10,7 @@ LD=gcc
 LDFLAGS=$(OPT)
 LIBS=-lsqlite3 -lgnet-2.0 -lglib-2.0
 
-OBJS=backend.o dns.o main.o
+OBJS=backend.o dns.o main.o socket.o
 
 
 default::	all
