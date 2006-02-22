@@ -40,6 +40,7 @@ void dns_push_rr(struct dnsres *res, const struct backend_rr *rr)
 	unsigned int idx;
 	uint32_t ttl;
 	uint16_t tmp;
+	uint8_t zero8 = 0;
 
 	dns_push_label(res, (const char *) rr->name);
 
@@ -48,6 +49,7 @@ void dns_push_rr(struct dnsres *res, const struct backend_rr *rr)
 		dns_push_label(res, labels[idx]);
 	g_strfreev(labels);
 
+	dns_push_bytes(res, &zero8, 1);
 
 	tmp = g_htons(rr->type);
 	dns_push_bytes(res, &tmp, 2);
