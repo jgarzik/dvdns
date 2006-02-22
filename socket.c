@@ -69,8 +69,10 @@ static void tcp_conn (GConn *conn, GConnEvent *event, void *user_data)
 	switch (event->type) {
 	case GNET_CONN_ERROR:
 	case GNET_CONN_CLOSE:
-	case GNET_CONN_WRITE:
 		cli_close(cli);
+		break;
+
+	case GNET_CONN_WRITE:
 		break;
 
 	case GNET_CONN_READ:

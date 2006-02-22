@@ -239,7 +239,10 @@ struct dnsres *dns_message(const char *buf, unsigned int buflen)
 	res->buflen = res->hdrq_len;
 
 	/* sanitize response header */
-	ohdr->opts[0] = hdr_response | (hdr->opts[0] & hdr_opcode_mask);
+	ohdr->opts[0] =
+		hdr_response |
+		(hdr->opts[0] & hdr_opcode_mask) |
+		(hdr->opts[0] & hdr_req_recur);
 	ohdr->n_ans = 0;
 	ohdr->n_auth = 0;
 	ohdr->n_add = 0;
