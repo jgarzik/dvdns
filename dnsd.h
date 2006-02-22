@@ -26,17 +26,12 @@ enum dns_hdr_bits {
 	hdr_opcode_mask		= 0x1e,
 };
 
-struct dns_label {
-	unsigned int		buflen;
-	char			buf[0];
-};
-
 struct dnsq {
 	GList			*labels;
 	char			type[3];
 	char			class[3];
 
-	struct dns_label	*first_label;
+	char			*first_label;
 	char			*suffix;
 	unsigned int		suffix_alloc;
 };

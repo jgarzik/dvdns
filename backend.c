@@ -69,8 +69,8 @@ void backend_query(void *data, void *user_data)
 		idx = st_name;
 
 		rc = sqlite3_bind_text(prep_stmts[idx], 1,
-				      q->first_label->buf,
-				      q->first_label->buflen,
+				      q->first_label,
+				      strlen(q->first_label),
 				      SQLITE_STATIC);
 		g_assert(rc == SQLITE_OK);
 
@@ -82,8 +82,8 @@ void backend_query(void *data, void *user_data)
 		idx = st_name_type;
 
 		rc = sqlite3_bind_text(prep_stmts[idx], 1,
-				      q->first_label->buf,
-				      q->first_label->buflen,
+				      q->first_label,
+				      strlen(q->first_label),
 				      SQLITE_STATIC);
 		g_assert(rc == SQLITE_OK);
 

@@ -7,7 +7,7 @@ void dns_push_rr(struct dnsres *res, const struct backend_rr *rr)
 {
 }
 
-static void g_list_free_ent(void *data, void *user_data)
+static void list_free_ent(void *data, void *user_data)
 {
 	g_free(data);
 }
@@ -16,7 +16,7 @@ static void dnsres_free_q(void *data, void *user_data)
 {
 	struct dnsq *q = data;
 
-	g_list_foreach(q->labels, g_list_free_ent, NULL);
+	g_list_foreach(q->labels, list_free_ent, NULL);
 	g_list_free(q->labels);
 	g_free(q->suffix);
 	g_free(q);
@@ -32,14 +32,10 @@ void dnsres_free(struct dnsres *res)
 
 static void dnsq_append_label(struct dnsq *q, const char *buf, unsigned int buflen)
 {
-	struct dns_label *label;
+	char *label;
 
 	/* create label record */
-	label = g_malloc(sizeof(struct dns_label) + buflen);
-	g_assert(label != NULL);
-
-	label->buflen = buflen;
-	memcpy(label->buf, buf, buflen);
+	label = g_utf8_strdown(buf, buflen);
 
 	/* add label to question's list of labels */
 	q->labels = g_list_append(q->labels, label);
@@ -61,7 +57,7 @@ static void dnsq_append_label(struct dnsq *q, const char *buf, unsigned int bufl
 
 		if (q->suffix[0] != 0)
 			strcat(q->suffix, ".");
-		strncat(q->suffix, label->buf, buflen);
+		strcat(q->suffix, label);
 	}
 }
 
