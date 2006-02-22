@@ -4,6 +4,4 @@ insert into labels values
 insert into rrs values
 ('test', 1, 1, 1, 3600, 'BBBB');
 insert into rrs values
-('test', 1, 2, 1, 604800, 'viper.yyz.us.');
-insert into rrs values
-('test', 1, 6, 1, 604800, 'viper.yyz.us. jgarzik.viper.yyz.us. 2004099064 43200 3600 604800 86400');
+('test', 1, 16, 1, 604800, '$Now is the time for all good men to ');
