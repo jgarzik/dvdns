@@ -27,3 +27,7 @@ dns.db:		dnsdb-data.sql  mk-dnsdb.sql
 clean:
 	rm -f dns.db dnsd $(OBJS)
 
+backend.o:	dnsd.h backend.c
+dns.o:		dnsd.h dns.c
+main.o:		dnsd.h main.c
+socket.o:	dnsd.h socket.c
