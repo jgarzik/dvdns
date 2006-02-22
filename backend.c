@@ -1,18 +1,61 @@
 
+#include <string.h>
 #include <sqlite3.h>
 #include "dnsd.h"
 
+enum sql_stmt_indices {
+	st_name,
+	st_name_type,
+
+	st_last = st_name_type
+};
+
+static const char *sql_stmt_text[] = {
+
+	/* st_name */
+	"select * from rrs where "
+	"rrs.name = ? and "
+	"rrs.suffix in "
+	"(select labels.id from labels where labels.name = ?)",
+
+	/* st_name_type */
+	"select * from rrs where "
+	"rrs.name = ? and "
+	"rrs.type = ? and "
+	"rrs.suffix in "
+	"(select labels.id from labels where labels.name = ?)"
+};
+
+static sqlite3_stmt *prep_stmts[st_last + 1];
 static sqlite3 *db;
 
 void backend_init(void)
 {
-	int rc = sqlite3_open("dns.db", &db);
+	unsigned int i;
+	int rc;
+
+	rc = sqlite3_open("dns.db", &db);
 	g_assert(rc == SQLITE_OK);
+
+	for (i = 0; i <= st_last; i++) {
+		const char *dummy;
+
+		rc = sqlite3_prepare(db, sql_stmt_text[i],
+				     strlen(sql_stmt_text[i]),
+				     &prep_stmts[i], &dummy);
+		g_assert(rc == SQLITE_OK);
+	}
 }
 
 void backend_exit(void)
 {
-	int rc = sqlite3_close(db);
+	unsigned int i;
+	int rc;
+
+	for (i = 0; i <= st_last; i++)
+		sqlite3_finalize(prep_stmts[i]);
+
+	rc = sqlite3_close(db);
 	g_assert(rc == SQLITE_OK);
 }
 
