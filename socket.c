@@ -120,7 +120,7 @@ void init_net(void)
 	GIOChannel *udpchan;
 	GServer *tcpsrv;
 
-	udpsock = gnet_udp_socket_new_with_port (9953);
+	udpsock = gnet_udp_socket_new_with_port (dns_port);
 	g_assert(udpsock != NULL);
 
 	udpchan = gnet_udp_socket_get_io_channel (udpsock);
@@ -128,7 +128,7 @@ void init_net(void)
 
 	g_io_add_watch(udpchan, G_IO_IN, udp_rx, NULL);
 
-	tcpsrv = gnet_server_new(NULL, 9953, tcp_accept, NULL);
+	tcpsrv = gnet_server_new(NULL, dns_port, tcp_accept, NULL);
 	g_assert(tcpsrv != NULL);
 }
 

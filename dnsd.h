@@ -74,4 +74,8 @@ extern void dns_mark_nxdomain(struct dnsres *res);
 /* socket.c */
 extern void init_net(void);
 
+/* main.c */
+extern int dns_port;
+extern char db_fn[];
+
 #endif /* __DNSD_H__ */

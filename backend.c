@@ -25,7 +25,7 @@ void backend_init(void)
 	unsigned int i;
 	int rc;
 
-	rc = sqlite3_open("dns.db", &db);
+	rc = sqlite3_open(db_fn, &db);
 	g_assert(rc == SQLITE_OK);
 
 	for (i = 0; i <= st_last; i++) {
