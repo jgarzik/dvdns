@@ -15,11 +15,15 @@ OBJS=backend.o dns.o main.o socket.o
 
 default::	all
 
-all::		dnsd
+all::		dnsd dns.db
 
 dnsd:		$(OBJS)
 	$(LD) $(LDFLAGS) -o dnsd $(OBJS) $(LIBS)
+dns.db:		dnsdb-data.sql  mk-dnsdb.sql
+	rm -f dns.db
+	sqlite3 dns.db < mk-dnsdb.sql
+	sqlite3 dns.db < dnsdb-data.sql
 
 clean:
-	rm -f dnsd $(OBJS)
+	rm -f dns.db dnsd $(OBJS)
 
