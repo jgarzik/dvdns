@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <glib.h>
 
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+
 enum {
 	max_label_len		= 63,
 	initial_suffix_alloc	= 512,
@@ -45,13 +47,14 @@ struct dnsres {
 	unsigned int		alloc_len;
 	unsigned int		hdrq_len;
 	GList			*queries;
+	int			query_rc;
 };
 
 
 /* backend.c */
 extern void backend_init(void);
 extern void backend_exit(void);
-extern int backend_query(struct dnsres *res, const struct dns_msg_hdr *hdr);
+extern void backend_query(void *data, void *user_data);
 
 /* dns.c */
 extern void dnsres_free(struct dnsres *res);

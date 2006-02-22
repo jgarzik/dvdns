@@ -16,8 +16,12 @@ void backend_exit(void)
 	g_assert(rc == SQLITE_OK);
 }
 
-int backend_query(struct dnsres *res, const struct dns_msg_hdr *hdr)
+void backend_query(void *data, void *user_data)
 {
-	return -1;
+	struct dnsq *q = data;
+	struct dnsres *res = user_data;
+
+	(void) q;
+	(void) res;
 }
 

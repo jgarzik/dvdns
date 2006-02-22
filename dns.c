@@ -186,8 +186,8 @@ struct dnsres *dns_message(const char *buf, unsigned int buflen)
 	ohdr->n_auth = 0;
 	ohdr->n_add = 0;
 
-	rc = backend_query(res, hdr);
-	if (rc != 0)			/* query failed */
+	g_list_foreach(res->queries, backend_query, res);
+	if (res->query_rc != 0)			/* query failed */
 		goto err_out;
 
 	return res;
