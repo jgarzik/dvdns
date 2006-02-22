@@ -65,7 +65,7 @@ void backend_query(void *data, void *user_data)
 	int rc;
 	unsigned int idx;
 
-	if (q->type[0] == '*') {
+	if (q->type == qtype_all) {
 		idx = st_name;
 
 		rc = sqlite3_bind_text(prep_stmts[idx], 1,
@@ -87,9 +87,7 @@ void backend_query(void *data, void *user_data)
 				      SQLITE_STATIC);
 		g_assert(rc == SQLITE_OK);
 
-		rc = sqlite3_bind_text(prep_stmts[idx], 2,
-				      q->type, strlen(q->type),
-				      SQLITE_STATIC);
+		rc = sqlite3_bind_int(prep_stmts[idx], 2, q->type);
 		g_assert(rc == SQLITE_OK);
 
 		rc = sqlite3_bind_text(prep_stmts[idx], 3,
@@ -111,8 +109,8 @@ void backend_query(void *data, void *user_data)
 		rr.domain_name = sqlite3_column_text(prep_stmts[idx], 0);
 		rr.name = sqlite3_column_text(prep_stmts[idx], 1);
 		/* skip suffix, column #2 */
-		rr.type = sqlite3_column_text(prep_stmts[idx], 3);
-		rr.class = sqlite3_column_text(prep_stmts[idx], 4);
+		rr.type = sqlite3_column_int(prep_stmts[idx], 3);
+		rr.class = sqlite3_column_int(prep_stmts[idx], 4);
 		rr.ttl = sqlite3_column_int(prep_stmts[idx], 5);
 		rr.rdata = sqlite3_column_blob(prep_stmts[idx], 6);
 		rr.rdata_len = sqlite3_column_bytes(prep_stmts[idx], 6);
@@ -120,6 +118,7 @@ void backend_query(void *data, void *user_data)
 		dns_push_rr(res, &rr);
 	}
 
-	(void) res;
+	rc = sqlite3_reset(prep_stmts[idx]);
+	g_assert(rc == SQLITE_OK);
 }
 

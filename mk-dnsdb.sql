@@ -9,8 +9,8 @@ on labels (id);
 create table rrs (
 	name		text,
 	suffix		integer,
-	type		text(2),
-	class		text(2),
+	type		integer,
+	class		integer,
 	ttl		integer,
 	rdata		blob
 );

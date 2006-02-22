@@ -9,7 +9,7 @@ static void dns_finalize(struct dnsres *res)
 
 	hdr = (struct dns_msg_hdr *) res->buf;
 	hdr->n_ans = g_htons(res->n_answers);
-	hdr->opts |= g_htons(hdr_auth);
+	hdr->opts[0] |= hdr_auth;
 }
 
 static void dns_push_bytes(struct dnsres *res, const void *buf,
@@ -39,7 +39,7 @@ void dns_push_rr(struct dnsres *res, const struct backend_rr *rr)
 	char **labels;
 	unsigned int idx;
 	uint32_t ttl;
-	uint16_t rdlen;
+	uint16_t tmp;
 
 	dns_push_label(res, (const char *) rr->name);
 
@@ -48,13 +48,18 @@ void dns_push_rr(struct dnsres *res, const struct backend_rr *rr)
 		dns_push_label(res, labels[idx]);
 	g_strfreev(labels);
 
-	ttl = g_htonl(rr->ttl);
-	rdlen = g_htons(rr->rdata_len);
 
-	dns_push_bytes(res, rr->type, 2);
-	dns_push_bytes(res, rr->class, 2);
+	tmp = g_htons(rr->type);
+	dns_push_bytes(res, &tmp, 2);
+
+	tmp = g_htons(rr->class);
+	dns_push_bytes(res, &tmp, 2);
+
+	ttl = g_htonl(rr->ttl);
 	dns_push_bytes(res, &ttl, 4);
-	dns_push_bytes(res, &rdlen, 2);
+
+	tmp = g_htons(rr->rdata_len);
+	dns_push_bytes(res, &tmp, 2);
 	dns_push_bytes(res, rr->rdata, rr->rdata_len);
 
 	res->n_answers++;
@@ -124,6 +129,7 @@ static int dns_read_questions(struct dnsres *res, const struct dns_msg_hdr *hdr,
 
 	for (i = 0; i < g_ntohs(hdr->n_q); i++) {
 		struct dnsq *q;
+		uint16_t *tmpi;
 
 		q = g_new0(struct dnsq, 1);
 		g_assert(q != NULL);
@@ -159,10 +165,11 @@ static int dns_read_questions(struct dnsres *res, const struct dns_msg_hdr *hdr,
 		if (ibuflen < 4)
 			goto err_out;
 		
-		memcpy(q->type, ibuf, 2);
-		memcpy(q->class, ibuf + 2, 2);
-		q->type[2] = 0;
-		q->class[2] = 0;
+		tmpi = (uint16_t *) ibuf;
+		q->type = g_ntohs(*tmpi);
+
+		tmpi = (uint16_t *) (ibuf + 2);
+		q->class = g_ntohs(*tmpi);
 
 		ibuf += 4;
 		ibuflen -= 4;
@@ -187,7 +194,6 @@ struct dnsres *dns_message(const char *buf, unsigned int buflen)
 	struct dns_msg_hdr *ohdr;
 	struct dnsres *res;
 	char *obuf;
-	uint16_t opts, o_opts;
 	const char *ibuf;
 	unsigned int ibuflen;
 	int rc;
@@ -204,13 +210,12 @@ struct dnsres *dns_message(const char *buf, unsigned int buflen)
 		goto err_out;
 
 	hdr = (const struct dns_msg_hdr *) buf;
-	opts = g_ntohs(hdr->opts);
 
 	ibuf += sizeof(*hdr);
 	ibuflen -= sizeof(*hdr);
 
 	/* if this is a response packet, just return NULL */
-	if (opts & hdr_response)
+	if (hdr->opts[0] & hdr_response)
 		goto err_out;
 
 	/* read list of questions */
@@ -232,9 +237,7 @@ struct dnsres *dns_message(const char *buf, unsigned int buflen)
 	res->buflen = res->hdrq_len;
 
 	/* sanitize response header */
-	o_opts = opts & (hdr_req_recur | hdr_opcode_mask);
-	o_opts |= hdr_response;
-	ohdr->opts = g_htons(o_opts);
+	ohdr->opts[0] = hdr_response | (hdr->opts[0] & hdr_opcode_mask);
 	ohdr->n_ans = 0;
 	ohdr->n_auth = 0;
 	ohdr->n_add = 0;

@@ -9,11 +9,13 @@
 enum {
 	max_label_len		= 63,
 	initial_suffix_alloc	= 512,
+
+	qtype_all		= 255,
 };
 
 struct dns_msg_hdr {
 	uint16_t		id;
-	uint16_t		opts;
+	unsigned char		opts[2];
 	uint16_t		n_q;
 	uint16_t		n_ans;
 	uint16_t		n_auth;
@@ -21,16 +23,16 @@ struct dns_msg_hdr {
 };
 
 enum dns_hdr_bits {
-	hdr_response		= 1 << 0,
-	hdr_auth		= 1 << 5,
-	hdr_req_recur		= 1 << 7,
-	hdr_opcode_mask		= 0x1e,
+	hdr_response		= 1 << 7,
+	hdr_auth		= 1 << 2,
+	hdr_req_recur		= 1 << 0,
+	hdr_opcode_mask		= 0x78,
 };
 
 struct dnsq {
 	GList			*labels;
-	char			type[3];
-	char			class[3];
+	unsigned int		type;
+	unsigned int		class;
 
 	char			*first_label;
 	char			*suffix;
@@ -51,8 +53,8 @@ struct dnsres {
 struct backend_rr {
 	const unsigned char	*name;
 	const unsigned char	*domain_name;
-	const unsigned char	*type;
-	const unsigned char	*class;
+	int			type;
+	int			class;
 	int			ttl;
 	const void		*rdata;
 	unsigned int		rdata_len;
