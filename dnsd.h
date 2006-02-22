@@ -11,6 +11,11 @@ enum {
 	initial_suffix_alloc	= 512,
 
 	qtype_all		= 255,
+
+	rcode_nxdomain		= 3,
+	rcode_notimpl		= 4,
+
+	op_query		= 0,
 };
 
 struct dns_msg_hdr {
@@ -27,6 +32,7 @@ enum dns_hdr_bits {
 	hdr_auth		= 1 << 2,
 	hdr_req_recur		= 1 << 0,
 	hdr_opcode_mask		= 0x78,
+	hdr_opcode_shift	= 3,
 };
 
 struct dnsq {
@@ -69,7 +75,7 @@ extern void backend_query(void *data, void *user_data);
 extern void dnsres_free(struct dnsres *res);
 extern struct dnsres *dns_message(const char *buf, unsigned int buflen);
 extern void dns_push_rr(struct dnsres *res, const struct backend_rr *rr);
-extern void dns_mark_nxdomain(struct dnsres *res);
+extern void dns_set_rcode(struct dnsres *res, unsigned int code);
 
 /* socket.c */
 extern void init_net(void);

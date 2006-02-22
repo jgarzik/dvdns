@@ -3,12 +3,12 @@
 #include <glib.h>
 #include "dnsd.h"
 
-void dns_mark_nxdomain(struct dnsres *res)
+void dns_set_rcode(struct dnsres *res, unsigned int code)
 {
 	struct dns_msg_hdr *hdr;
 
 	hdr = (struct dns_msg_hdr *) res->buf;
-	hdr->opts[1] = 3;
+	hdr->opts[1] = code & 0x0f;
 }
 
 static void dns_finalize(struct dnsres *res)
@@ -205,7 +205,7 @@ struct dnsres *dns_message(const char *buf, unsigned int buflen)
 	struct dnsres *res;
 	char *obuf;
 	const char *ibuf;
-	unsigned int ibuflen;
+	unsigned int ibuflen, opcode;
 	int rc;
 
 	/* allocate result struct */
@@ -224,7 +224,7 @@ struct dnsres *dns_message(const char *buf, unsigned int buflen)
 	ibuf += sizeof(*hdr);
 	ibuflen -= sizeof(*hdr);
 
-	/* if this is a response packet, just return NULL */
+	/* if this is a response packet, just return NULL (no resp to client) */
 	if (hdr->opts[0] & hdr_response)
 		goto err_out;
 
@@ -255,9 +255,18 @@ struct dnsres *dns_message(const char *buf, unsigned int buflen)
 	ohdr->n_auth = 0;
 	ohdr->n_add = 0;
 
-	g_list_foreach(res->queries, backend_query, res);
-	if (res->query_rc != 0)			/* query failed */
-		goto err_out;
+	opcode = (hdr->opts[0] & hdr_opcode_mask) >> hdr_opcode_shift;
+	switch (opcode) {
+		case op_query:
+			g_list_foreach(res->queries, backend_query, res);
+			if (res->query_rc != 0)		/* query failed */
+				goto err_out;
+			break;
+
+		default:
+			dns_set_rcode(res, rcode_notimpl);
+			break;
+	}
 
 	dns_finalize(res);
 

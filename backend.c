@@ -105,6 +105,6 @@ void backend_query(void *data, void *user_data)
 
 	/* no data found for given domain name */
 	if (rows == 0)
-		dns_mark_nxdomain(res);
+		dns_set_rcode(res, rcode_nxdomain);
 }
 
