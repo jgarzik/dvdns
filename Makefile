@@ -15,6 +15,8 @@ OBJS=backend.o dns.o main.o socket.o
 
 default::	all
 
+distclean::	clean
+
 all::		dnsd dns.db
 
 dnsd:		$(OBJS)
