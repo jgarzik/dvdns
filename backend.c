@@ -5,9 +5,8 @@
 
 enum sql_stmt_indices {
 	st_name,
-	st_name_type,
 
-	st_last = st_name_type
+	st_last = st_name
 };
 
 static const char *sql_stmt_text[] = {
@@ -16,13 +15,6 @@ static const char *sql_stmt_text[] = {
 	"rrs.name = ? and "
 	"rrs.suffix in "
 	"(select labels.id from labels where labels.name = ?)",
-
-	/* st_name_type */
-	"select labels.name, rrs.* from labels, rrs where "
-	"rrs.name = ? and "
-	"rrs.type = ? and "
-	"rrs.suffix in "
-	"(select labels.id from labels where labels.name = ?)"
 };
 
 static sqlite3_stmt *prep_stmts[st_last + 1];
@@ -63,38 +55,20 @@ void backend_query(void *data, void *user_data)
 	struct dnsq *q = data;
 	struct dnsres *res = user_data;
 	int rc;
-	unsigned int idx;
+	unsigned int idx, rows = 0;
 
-	if (q->type == qtype_all) {
-		idx = st_name;
+	idx = st_name;
 
-		rc = sqlite3_bind_text(prep_stmts[idx], 1,
-				      q->first_label,
-				      strlen(q->first_label),
-				      SQLITE_STATIC);
-		g_assert(rc == SQLITE_OK);
+	rc = sqlite3_bind_text(prep_stmts[idx], 1,
+			      q->first_label,
+			      strlen(q->first_label),
+			      SQLITE_STATIC);
+	g_assert(rc == SQLITE_OK);
 
-		rc = sqlite3_bind_text(prep_stmts[idx], 2,
-				      q->suffix, strlen(q->suffix),
-				      SQLITE_STATIC);
-		g_assert(rc == SQLITE_OK);
-	} else {
-		idx = st_name_type;
-
-		rc = sqlite3_bind_text(prep_stmts[idx], 1,
-				      q->first_label,
-				      strlen(q->first_label),
-				      SQLITE_STATIC);
-		g_assert(rc == SQLITE_OK);
-
-		rc = sqlite3_bind_int(prep_stmts[idx], 2, q->type);
-		g_assert(rc == SQLITE_OK);
-
-		rc = sqlite3_bind_text(prep_stmts[idx], 3,
-				      q->suffix, strlen(q->suffix),
-				      SQLITE_STATIC);
-		g_assert(rc == SQLITE_OK);
-	}
+	rc = sqlite3_bind_text(prep_stmts[idx], 2,
+			      q->suffix, strlen(q->suffix),
+			      SQLITE_STATIC);
+	g_assert(rc == SQLITE_OK);
 
 	while (1) {
 		struct backend_rr rr;
@@ -104,6 +78,8 @@ void backend_query(void *data, void *user_data)
 		if (rc == SQLITE_DONE || rc == SQLITE_BUSY)
 			break;
 		g_assert(rc == SQLITE_ROW);
+
+		rows++;
 
 		memset(&rr, 0, sizeof(rr));
 		rr.domain_name = sqlite3_column_text(prep_stmts[idx], 0);
@@ -115,10 +91,20 @@ void backend_query(void *data, void *user_data)
 		rr.rdata = sqlite3_column_blob(prep_stmts[idx], 6);
 		rr.rdata_len = sqlite3_column_bytes(prep_stmts[idx], 6);
 
+		/* filter out non-matching classes and types */
+		if (q->class != rr.class)
+			continue;
+		if ((q->type != qtype_all) && (q->type != rr.type))
+			continue;
+
 		dns_push_rr(res, &rr);
 	}
 
 	rc = sqlite3_reset(prep_stmts[idx]);
 	g_assert(rc == SQLITE_OK);
+
+	/* no data found for given domain name */
+	if (rows == 0)
+		dns_mark_nxdomain(res);
 }
 

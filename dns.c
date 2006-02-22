@@ -3,6 +3,14 @@
 #include <glib.h>
 #include "dnsd.h"
 
+void dns_mark_nxdomain(struct dnsres *res)
+{
+	struct dns_msg_hdr *hdr;
+
+	hdr = (struct dns_msg_hdr *) res->buf;
+	hdr->opts[1] = 3;
+}
+
 static void dns_finalize(struct dnsres *res)
 {
 	struct dns_msg_hdr *hdr;
@@ -111,7 +119,7 @@ static void dnsq_append_label(struct dnsq *q, const char *buf, unsigned int bufl
 		}
 		else if ((buflen+1) > (q->suffix_alloc - strlen(q->suffix))) {
 			q->suffix_alloc *= 2;
-			q->suffix = g_realloc(q->suffix, 
+			q->suffix = g_realloc(q->suffix,
 				q->suffix_alloc);
 		}
 
@@ -142,7 +150,7 @@ static int dns_read_questions(struct dnsres *res, const struct dns_msg_hdr *hdr,
 
 			if (ibuflen == 0)
 				goto err_out;
-		
+
 			/* get label length */
 			label_len = *ibuf;
 			ibuf++;
@@ -166,7 +174,7 @@ static int dns_read_questions(struct dnsres *res, const struct dns_msg_hdr *hdr,
 		/* read type, class */
 		if (ibuflen < 4)
 			goto err_out;
-		
+
 		tmpi = (uint16_t *) ibuf;
 		q->type = g_ntohs(*tmpi);
 

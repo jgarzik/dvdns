@@ -69,6 +69,7 @@ extern void backend_query(void *data, void *user_data);
 extern void dnsres_free(struct dnsres *res);
 extern struct dnsres *dns_message(const char *buf, unsigned int buflen);
 extern void dns_push_rr(struct dnsres *res, const struct backend_rr *rr);
+extern void dns_mark_nxdomain(struct dnsres *res);
 
 /* socket.c */
 extern void init_net(void);
