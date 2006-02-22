@@ -22,6 +22,7 @@ struct dns_msg_hdr {
 
 enum dns_hdr_bits {
 	hdr_response		= 1 << 0,
+	hdr_auth		= 1 << 5,
 	hdr_req_recur		= 1 << 7,
 	hdr_opcode_mask		= 0x1e,
 };
@@ -43,6 +44,8 @@ struct dnsres {
 	unsigned int		hdrq_len;
 	GList			*queries;
 	int			query_rc;
+
+	unsigned int		n_answers;
 };
 
 struct backend_rr {

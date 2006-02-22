@@ -3,8 +3,61 @@
 #include <glib.h>
 #include "dnsd.h"
 
+static void dns_finalize(struct dnsres *res)
+{
+	struct dns_msg_hdr *hdr;
+
+	hdr = (struct dns_msg_hdr *) res->buf;
+	hdr->n_ans = g_htons(res->n_answers);
+	hdr->opts |= g_htons(hdr_auth);
+}
+
+static void dns_push_bytes(struct dnsres *res, const void *buf,
+			   unsigned int buflen)
+{
+	if ((res->alloc_len - res->buflen) < buflen) {
+		res->alloc_len = (res->alloc_len * 2) + buflen;
+		res->buf = g_realloc(res->buf, res->alloc_len);
+	}
+
+	memcpy(res->buf + res->buflen, buf, buflen);
+	res->buflen += buflen;
+}
+
+static void dns_push_label(struct dnsres *res, const char *str)
+{
+	uint8_t len = strlen(str);
+
+	g_assert(len <= 63);
+
+	dns_push_bytes(res, &len, 1);
+	dns_push_bytes(res, str, len);
+}
+
 void dns_push_rr(struct dnsres *res, const struct backend_rr *rr)
 {
+	char **labels;
+	unsigned int idx;
+	uint32_t ttl;
+	uint16_t rdlen;
+
+	dns_push_label(res, (const char *) rr->name);
+
+	labels = g_strsplit((const gchar *) rr->domain_name, ".", 0);
+	for (idx = 0; labels[idx]; idx++)
+		dns_push_label(res, labels[idx]);
+	g_strfreev(labels);
+
+	ttl = g_htonl(rr->ttl);
+	rdlen = g_htons(rr->rdata_len);
+
+	dns_push_bytes(res, rr->type, 2);
+	dns_push_bytes(res, rr->class, 2);
+	dns_push_bytes(res, &ttl, 4);
+	dns_push_bytes(res, &rdlen, 2);
+	dns_push_bytes(res, rr->rdata, rr->rdata_len);
+
+	res->n_answers++;
 }
 
 static void list_free_ent(void *data, void *user_data)
@@ -189,6 +242,8 @@ struct dnsres *dns_message(const char *buf, unsigned int buflen)
 	g_list_foreach(res->queries, backend_query, res);
 	if (res->query_rc != 0)			/* query failed */
 		goto err_out;
+
+	dns_finalize(res);
 
 	return res;
 
