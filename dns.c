@@ -14,6 +14,7 @@ static void dnsres_free_q(void *data, void *user_data)
 
 	g_list_foreach(q->labels, g_list_free_ent, NULL);
 	g_list_free(q->labels);
+	g_free(q->suffix);
 	g_free(q);
 }
 
@@ -23,6 +24,41 @@ void dnsres_free(struct dnsres *res)
 	g_list_free(res->queries);
 	g_free(res->buf);
 	g_free(res);
+}
+
+static void dnsq_append_label(struct dnsq *q, const char *buf, unsigned int buflen)
+{
+	struct dns_label *label;
+
+	/* create label record */
+	label = g_malloc(sizeof(struct dns_label) + buflen);
+	g_assert(label != NULL);
+
+	label->buflen = buflen;
+	memcpy(label->buf, buf, buflen);
+
+	/* add label to question's list of labels */
+	q->labels = g_list_append(q->labels, label);
+
+	/* maintain first_label / suffix */
+	if (!q->first_label)
+		q->first_label = label;
+	else {
+		if (!q->suffix) {
+			q->suffix = g_malloc(initial_suffix_alloc);
+			q->suffix[0] = 0;
+			q->suffix_alloc = initial_suffix_alloc;
+		}
+		else if ((buflen+1) > (q->suffix_alloc - strlen(q->suffix))) {
+			q->suffix_alloc *= 2;
+			q->suffix = g_realloc(q->suffix, 
+				q->suffix_alloc);
+		}
+
+		if (q->suffix[0] != 0)
+			strcat(q->suffix, ".");
+		strncat(q->suffix, label->buf, buflen);
+	}
 }
 
 static int dns_read_questions(struct dnsres *res, const struct dns_msg_hdr *hdr,
@@ -42,7 +78,6 @@ static int dns_read_questions(struct dnsres *res, const struct dns_msg_hdr *hdr,
 		/* read list of labels */
 		while (1) {
 			unsigned int label_len;
-			struct dns_label *label;
 
 			if (ibuflen == 0)
 				goto err_out;
@@ -55,21 +90,16 @@ static int dns_read_questions(struct dnsres *res, const struct dns_msg_hdr *hdr,
 			/* if label length zero, list terminates */
 			if (label_len == 0)
 				break;
-			if (ibuflen < label_len)
+
+			/* FIXME: pointer compression */
+			if (label_len > ibuflen || label_len > max_label_len)
 				goto err_out;
 
 			/* copy label */
-			label = g_malloc(sizeof(struct dns_label) + label_len);
-			g_assert(label != NULL);
-
-			label->buflen = label_len;
-			memcpy(label->buf, ibuf, label_len);
+			dnsq_append_label(q, ibuf, label_len);
 
 			ibuf += label_len;
 			ibuflen -= label_len;
-
-			/* add label to question's list of labels */
-			q->labels = g_list_append(q->labels, label);
 		}
 
 		/* read type, class */

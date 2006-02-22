@@ -4,6 +4,11 @@
 #include <stdint.h>
 #include <glib.h>
 
+enum {
+	max_label_len		= 63,
+	initial_suffix_alloc	= 512,
+};
+
 struct dns_msg_hdr {
 	uint16_t		id;
 	uint16_t		opts;
@@ -28,6 +33,10 @@ struct dnsq {
 	GList			*labels;
 	char			type[3];
 	char			class[3];
+
+	struct dns_label	*first_label;
+	char			*suffix;
+	unsigned int		suffix_alloc;
 };
 
 struct dnsres {
