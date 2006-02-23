@@ -3,7 +3,9 @@
 # Script to import a standard BIND zone file into the database.
 #
 
-use DBI;
+use Net::DNS::RR;
+use Net::DNS::ZoneFile::Fast;
+use DBI qw(:sql_types);
 
 my ($dbh, %dom_cache);
 my $next_id = 1;
@@ -25,8 +27,6 @@ sub read_max_id() {
 	die "no row of data returned\n"
 		unless @data = $sth->fetchrow_array();
 
-	$sth->finish;
-
 	$max_id = $data[0];
 	die "invalid max_id $max_id\n"
 		unless ($max_id > 0);
@@ -41,18 +41,16 @@ sub get_dom_id($) {
 		if (exists $dom_cache{$domain});
 
 	# obtain integer id associated with domain name, or create new one
-	my $sth = $dbh->prepare_cached('select id from labels where name = ?');
+	my $sth = $dbh->prepare('select id from labels where name = ?');
 	die "select prep failed\n" unless $sth;
 
 	$sth->execute($domain) or die "sql exec failed";
 
 	if (($id) = $sth->fetchrow_array()) {
-		$sth->finish;
 		$dom_cache{$domain} = $id;
 		return $id;
 	}
 
-	$sth->finish;
 	return undef;
 }
 
@@ -76,25 +74,22 @@ sub import_rr($) {
 		$next_id++;
 		$dom_cache{$domain} = $id;
 
-		my $ih = $dbh->prepare_cache('insert into labels values (?,?)');
+		my $ih = $dbh->prepare_cached('insert into labels values (?,?)');
 		$ih->execute($domain, $id) or die "sql insert failed";
-		$ih->finish;
 	}
 
 	# build RR sql insert
 	my $sth = $dbh->prepare_cached('insert into rrs values (?,?,?,?,?,?)');
 	die "sql prep failed" unless $sth;
 
-	$sth->bind_param(1, $host, SQL_TEXT);
+	$sth->bind_param(1, $host, SQL_VARCHAR);
 	$sth->bind_param(2, $id, SQL_INTEGER);
-	$sth->bind_param(3, $rr->type, SQL_INTEGER);
-	$sth->bind_param(4, $rr->class, SQL_INTEGER);
+	$sth->bind_param(3, Net::DNS::typesbyname($rr->type), SQL_INTEGER);
+	$sth->bind_param(4, Net::DNS::classesbyname($rr->class), SQL_INTEGER);
 	$sth->bind_param(5, $rr->ttl, SQL_INTEGER);
 	$sth->bind_param(6, $rr->rdata, SQL_BLOB);
 
 	$sth->execute() or die "sql exec failed";
-
-	$sth->finish() or die "sql finish failed";
 }
 
 sub import_zonefile($) {
@@ -117,11 +112,10 @@ sub import_zonefile($) {
 
 my $dbfn = shift;
 usage() unless $dbfn;
-$dbh = DBI->connect("dbi:SQLite:dbname=$fn",
-		{AutoCommit => 0},
-	);
+$dbh = DBI->connect("dbi:SQLite:dbname=$dbfn", "", "",
+		    { AutoCommit => 0 });
 $dbh->{unicode} = 1;
-die "connect($fn) failed: " . DBI->errstr . "\n"
+die "connect($dbfn) failed: " . DBI->errstr . "\n"
 	unless $dbh;
 
 read_max_id();
