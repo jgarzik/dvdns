@@ -84,7 +84,7 @@ sub import_rr($) {
 	$sth->bind_param(3, Net::DNS::typesbyname($rr->type), SQL_INTEGER);
 	$sth->bind_param(4, Net::DNS::classesbyname($rr->class), SQL_INTEGER);
 	$sth->bind_param(5, $rr->ttl, SQL_INTEGER);
-	$sth->bind_param(6, $rr->rdata, SQL_BLOB);
+	$sth->bind_param(6, $rr->_canonicalRdata, SQL_BLOB);
 
 	$sth->execute() or die "sql exec failed";
 }
