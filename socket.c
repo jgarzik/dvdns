@@ -47,18 +47,6 @@ static void udp_message(GUdpSocket *sock, GInetAddr *src,
 	}
 }
 
-static void tcp_message(struct client *cli, const char *buf, unsigned int buflen)
-{
-	struct dnsres *res = dns_message(buf, buflen);
-
-	if (res) {
-		uint16_t msglen = g_htons(res->buflen);
-		gnet_conn_write(cli->conn, (gchar *) &msglen, 2);
-		gnet_conn_write(cli->conn, res->buf, res->buflen);
-		dnsres_free(res);
-	}
-}
-
 static gboolean udp_rx (GIOChannel *source, GIOCondition condition,
                                              void *data)
 {
@@ -73,6 +61,18 @@ static gboolean udp_rx (GIOChannel *source, GIOCondition condition,
 	udp_message(udpsock, src, buf, bytes);
 
 	return TRUE; /* poll again */
+}
+
+static void tcp_message(struct client *cli, const char *buf, unsigned int buflen)
+{
+	struct dnsres *res = dns_message(buf, buflen);
+
+	if (res) {
+		uint16_t msglen = g_htons(res->buflen);
+		gnet_conn_write(cli->conn, (gchar *) &msglen, 2);
+		gnet_conn_write(cli->conn, res->buf, res->buflen);
+		dnsres_free(res);
+	}
 }
 
 static void cli_close(struct client *cli)
