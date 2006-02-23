@@ -5,6 +5,19 @@ This is an authoritative-only DNS server.
 
 
 Specific notes:
-
 * SQL rdata must be in wire format, inside the database
+
+
+Core dependencies:
+* GLib 2.x	http://www.gtk.org/
+* GNet 2.x	http://www.gnetlibrary.org/
+* SQLite 3.x	http://www.sqlite.org/
+
+
+Perl dependencies (needed for import, not for normal operation):
+* DBI
+* DBD::SQLite
+* Net::DNS::RR
+* Net::DNS::ZoneFile::Fast
+* ...and their many dependencies.
 
