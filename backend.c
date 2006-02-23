@@ -31,8 +31,7 @@ enum sql_stmt_indices {
 static const char *sql_stmt_text[] = {
 	/* st_name */
 	"select labels.name, rrs.* from labels, rrs where "
-	"rrs.name = ? and "
-	"rrs.suffix in "
+	"rrs.domain in "
 	"(select labels.id from labels where labels.name = ?)",
 };
 
@@ -79,13 +78,7 @@ void backend_query(void *data, void *user_data)
 	idx = st_name;
 
 	rc = sqlite3_bind_text(prep_stmts[idx], 1,
-			      q->first_label,
-			      strlen(q->first_label),
-			      SQLITE_STATIC);
-	g_assert(rc == SQLITE_OK);
-
-	rc = sqlite3_bind_text(prep_stmts[idx], 2,
-			      q->suffix, strlen(q->suffix),
+			      q->name, strlen(q->name),
 			      SQLITE_STATIC);
 	g_assert(rc == SQLITE_OK);
 

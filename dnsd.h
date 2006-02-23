@@ -28,7 +28,7 @@
 
 enum {
 	max_label_len		= 63,
-	initial_suffix_alloc	= 512,
+	initial_name_alloc	= 512,
 
 	qtype_all		= 255,
 
@@ -60,9 +60,8 @@ struct dnsq {
 	unsigned int		type;
 	unsigned int		class;
 
-	char			*first_label;
-	char			*suffix;
-	unsigned int		suffix_alloc;
+	char			*name;
+	unsigned int		name_alloc;
 };
 
 struct dnsres {

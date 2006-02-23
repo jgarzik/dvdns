@@ -105,7 +105,7 @@ static void dnsres_free_q(void *data, void *user_data)
 
 	g_list_foreach(q->labels, list_free_ent, NULL);
 	g_list_free(q->labels);
-	g_free(q->suffix);
+	g_free(q->name);
 	g_free(q);
 }
 
@@ -127,25 +127,19 @@ static void dnsq_append_label(struct dnsq *q, const char *buf, unsigned int bufl
 	/* add label to question's list of labels */
 	q->labels = g_list_append(q->labels, label);
 
-	/* maintain first_label / suffix */
-	if (!q->first_label)
-		q->first_label = label;
-	else {
-		if (!q->suffix) {
-			q->suffix = g_malloc(initial_suffix_alloc);
-			q->suffix[0] = 0;
-			q->suffix_alloc = initial_suffix_alloc;
-		}
-		else if ((buflen+1) > (q->suffix_alloc - strlen(q->suffix))) {
-			q->suffix_alloc *= 2;
-			q->suffix = g_realloc(q->suffix,
-				q->suffix_alloc);
-		}
-
-		if (q->suffix[0] != 0)
-			strcat(q->suffix, ".");
-		strcat(q->suffix, label);
+	if (!q->name) {
+		q->name = g_malloc(initial_name_alloc);
+		q->name[0] = 0;
+		q->name_alloc = initial_name_alloc;
 	}
+	else if ((buflen+1) > (q->name_alloc - strlen(q->name))) {
+		q->name_alloc *= 2;
+		q->name = g_realloc(q->name, q->name_alloc);
+	}
+
+	if (q->name[0] != 0)
+		strcat(q->name, ".");
+	strcat(q->name, label);
 }
 
 static int dns_read_questions(struct dnsres *res, const struct dns_msg_hdr *hdr,
