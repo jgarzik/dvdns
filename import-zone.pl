@@ -60,11 +60,8 @@ sub import_rr($) {
 
 	# split domain name into "A" and "B.C.D" parts.
 	if (!(($host, $domain) = ($rr->name =~ /^([^\.]+)\.(.*)$/))) {
-		$host = lc($rr->name);
+		$host = $rr->name;
 		$domain = "";
-	} else {
-		$host = lc($host);
-		$domain = lc($domain);
 	}
 
 	# get domain integer id, or create new one
@@ -94,14 +91,13 @@ sub import_rr($) {
 
 sub import_zonefile($) {
 	my ($fn) = @_;
-	my (@data, $text, $rrs, $rr);
+	my ($rrs, $rr);
 
-	open(F, $fn) or die "$fn: $!\n";
-	@data = <F>;
-	$text = join("", @data);
-	close(F);
+	$rrs = Net::DNS::ZoneFile::Fast::parse(
+		'file'		=> $fn,
+		'tolower'	=> 1
+		);
 
-	$rrs = Net::DNS::ZoneFile::Fast::parse($text);
 	foreach $rr (@$rrs) {
 		import_rr($rr);
 	}
