@@ -1,0 +1,10 @@
+
+This is an authoritative-only DNS server.
+
+
+
+
+Specific notes:
+
+* SQL rdata must be in wire format, inside the database
+
