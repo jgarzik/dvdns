@@ -76,8 +76,7 @@ struct dnsres {
 };
 
 struct backend_rr {
-	const unsigned char	*name;
-	const unsigned char	*domain_name;
+	const unsigned char	*domain;
 	int			type;
 	int			class;
 	int			ttl;

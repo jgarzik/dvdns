@@ -69,9 +69,7 @@ void dns_push_rr(struct dnsres *res, const struct backend_rr *rr)
 	uint16_t tmp;
 	uint8_t zero8 = 0;
 
-	dns_push_label(res, (const char *) rr->name);
-
-	labels = g_strsplit((const gchar *) rr->domain_name, ".", 0);
+	labels = g_strsplit((const gchar *) rr->domain, ".", 0);
 	for (idx = 0; labels[idx]; idx++)
 		dns_push_label(res, labels[idx]);
 	g_strfreev(labels);
