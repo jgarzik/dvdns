@@ -3,10 +3,6 @@ This is currently developer-only code.  Do not run on a production
 server, it's probably riddled with bugs.
 
 
-
-Specific caveats:
-
-* The Makefile was something I whipped up in five minutes.  It should
-use glib-config and pkgconfig for glib/gnet, but does not.
+See TODO for specific caveats, including Makefile lameness.
 
 

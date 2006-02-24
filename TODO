@@ -1,0 +1,18 @@
+
+In no particular order.
+
+* The Makefile was something I whipped up in five minutes.  It should
+use glib-config and pkgconfig for glib/gnet, but does not.
+
+* chroot
+
+* setuid/setgid
+
+* Use IP_PKTINFO with recvmsg()/sendmsg() to stamp the proper
+  source addr on all outgoing UDP packets.
+
+* listen on specific interfaces
+
+* config file
+
+
