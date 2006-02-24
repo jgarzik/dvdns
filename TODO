@@ -15,4 +15,4 @@ use glib-config and pkgconfig for glib/gnet, but does not.
 
 * config file
 
-
+* think about problems wildcard DNS causes with current database scheme.
