@@ -104,7 +104,7 @@ static void dnsres_free_q(void *data, void *user_data)
 	g_list_foreach(q->labels, list_free_ent, NULL);
 	g_list_free(q->labels);
 	g_free(q->name);
-	g_free(q);
+	g_slice_free(struct dnsq, q);
 }
 
 void dnsres_free(struct dnsres *res)
@@ -112,7 +112,13 @@ void dnsres_free(struct dnsres *res)
 	g_list_foreach(res->queries, dnsres_free_q, NULL);
 	g_list_free(res->queries);
 	g_free(res->buf);
-	g_free(res);
+	g_slice_free(struct dnsres, res);
+}
+
+static struct dnsres *dnsres_alloc(void)
+{
+	struct dnsres *res = g_slice_new0(struct dnsres);
+	return res;
 }
 
 static void dnsq_append_label(struct dnsq *q, const char *buf, unsigned int buflen)
@@ -152,7 +158,7 @@ static int dns_read_questions(struct dnsres *res, const struct dns_msg_hdr *hdr,
 		struct dnsq *q;
 		uint16_t *tmpi;
 
-		q = g_new0(struct dnsq, 1);
+		q = g_slice_new0(struct dnsq);
 		g_assert(q != NULL);
 
 		/* read list of labels */
@@ -220,8 +226,9 @@ struct dnsres *dns_message(const char *buf, unsigned int buflen)
 	int rc;
 
 	/* allocate result struct */
-	res = g_new0(struct dnsres, 1);
-	g_assert(res != NULL);
+	res = dnsres_alloc();
+	if (!res)
+		return NULL;
 
 	ibuf = buf;
 	ibuflen = buflen;

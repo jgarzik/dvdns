@@ -16,3 +16,8 @@ use glib-config and pkgconfig for glib/gnet, but does not.
 * config file
 
 * think about problems wildcard DNS causes with current database scheme.
+
+* handle too-large answers (DNS's intentional packet truncation)
+
+* handle DNS label compression correctly
+

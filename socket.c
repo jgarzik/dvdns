@@ -78,7 +78,7 @@ static void tcp_message(struct client *cli, const char *buf, unsigned int buflen
 static void cli_close(struct client *cli)
 {
 	gnet_conn_unref(cli->conn);
-	g_free(cli);
+	g_slice_free(struct client, cli);
 }
 
 static void tcp_conn (GConn *conn, GConnEvent *event, void *user_data)
@@ -122,7 +122,7 @@ static void tcp_accept (GServer *server, GConn *client, void *data)
 
 	g_assert(client != NULL);	/* socket error */
 
-	cli = g_new0(struct client, 1);
+	cli = g_slice_new0(struct client);
 	g_assert(cli != NULL);
 
 	cli->conn = client;
