@@ -21,3 +21,12 @@ use glib-config and pkgconfig for glib/gnet, but does not.
 
 * handle DNS label compression correctly
 
+* return value checking needs vast improvement.  currently uses
+  g_assert() for some potential runtime conditions.
+
+* add checking for memory allocation failures (NOTE: check to see
+  if GLib simply kills app on alloc failure, checks may not be
+  necessary)
+
+* add logging
+

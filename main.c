@@ -38,9 +38,8 @@ static void show_usage(const char *prog)
 	exit(1);
 }
 
-int main (int argc, char *argv[])
+static void parse_cmdline(int argc, char **argv)
 {
-	GMainLoop *loop;
 	int opt;
 
 	while ((opt = getopt(argc, argv, "hf:p:")) != -1) {
@@ -49,15 +48,27 @@ int main (int argc, char *argv[])
 				if (atoi(optarg) > 0 &&
 				    atoi(optarg) < 65536)
 					dns_port = atoi(optarg);
+				else {
+					fprintf(stderr, "invalid DNS port %s\n",
+						optarg);
+					exit(1);
+				}
 				break;
 			case 'f':
 				strcpy(db_fn, optarg);
 				break;
 			default:
 				show_usage(argv[0]);
-				break;
+				exit(1);
 		}
 	}
+}
+
+int main (int argc, char *argv[])
+{
+	GMainLoop *loop;
+
+	parse_cmdline(argc, argv);
 
 	loop = g_main_loop_new(NULL, FALSE);
 	g_assert(loop != NULL);
