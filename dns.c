@@ -39,40 +39,62 @@ static void dns_finalize(struct dnsres *res)
 	hdr->opts[0] |= hdr_auth;
 }
 
+static size_t dns_res_space(struct dnsres *res)
+{
+	return res->alloc_len - res->buflen;
+}
+
 static void dns_push_bytes(struct dnsres *res, const void *buf,
 			   unsigned int buflen)
 {
-	if ((res->alloc_len - res->buflen) < buflen) {
-		res->alloc_len = (res->alloc_len * 2) + buflen;
-		res->buf = g_realloc(res->buf, res->alloc_len);
+	if (dns_res_space(res) < buflen) {
+		size_t new_size = res->alloc_len;
+		void *mem;
+
+		while (dns_res_space(res) < buflen)
+			new_size = new_size << 1;
+
+		mem = g_slice_alloc(new_size);
+		memcpy(mem, res->buf, res->alloc_len);
+		g_slice_free1(res->alloc_len, res->buf);
+
+		res->buf = mem;
+		res->alloc_len = new_size;
 	}
 
 	memcpy(res->buf + res->buflen, buf, buflen);
 	res->buflen += buflen;
 }
 
-static void dns_push_label(struct dnsres *res, const char *str)
-{
-	uint8_t len = strlen(str);
-
-	g_assert(len <= 63);
-
-	dns_push_bytes(res, &len, 1);
-	dns_push_bytes(res, str, len);
-}
-
 void dns_push_rr(struct dnsres *res, const struct backend_rr *rr)
 {
-	char **labels;
-	unsigned int idx;
+	const unsigned char *s, *accum;
+	size_t accum_len;
 	uint32_t ttl;
 	uint16_t tmp;
 	uint8_t zero8 = 0;
 
-	labels = g_strsplit((const gchar *) rr->domain, ".", 0);
-	for (idx = 0; labels[idx]; idx++)
-		dns_push_label(res, labels[idx]);
-	g_strfreev(labels);
+	accum_len = 0;
+	accum = s = rr->domain;
+	while (1) {
+		if (*s == '.' || *s == 0) {
+			if (accum_len) {
+				uint8_t len = accum_len;
+				g_assert(len <= 63);
+				dns_push_bytes(res, &len, 1);
+				dns_push_bytes(res, accum, accum_len);
+			}
+
+			if (*s == 0)
+				break;
+
+			accum = s + 1;
+			accum_len = 0;
+		} else
+			accum_len++;
+
+		s++;
+	}
 
 	dns_push_bytes(res, &zero8, 1);
 
@@ -103,7 +125,7 @@ static void dnsres_free_q(void *data, void *user_data)
 
 	g_list_foreach(q->labels, list_free_ent, NULL);
 	g_list_free(q->labels);
-	g_free(q->name);
+	g_slice_free1(q->name_alloc, q->name);
 	g_slice_free(struct dnsq, q);
 }
 
@@ -111,7 +133,7 @@ void dnsres_free(struct dnsres *res)
 {
 	g_list_foreach(res->queries, dnsres_free_q, NULL);
 	g_list_free(res->queries);
-	g_free(res->buf);
+	g_slice_free1(res->alloc_len, res->buf);
 	g_slice_free(struct dnsres, res);
 }
 
@@ -132,13 +154,21 @@ static void dnsq_append_label(struct dnsq *q, const char *buf, unsigned int bufl
 	q->labels = g_list_append(q->labels, label);
 
 	if (!q->name) {
-		q->name = g_malloc(initial_name_alloc);
+		q->name = g_slice_alloc(initial_name_alloc);
 		q->name[0] = 0;
 		q->name_alloc = initial_name_alloc;
 	}
 	else if ((buflen+1) > (q->name_alloc - strlen(q->name))) {
-		q->name_alloc *= 2;
-		q->name = g_realloc(q->name, q->name_alloc);
+		void *mem;
+		size_t new_size = q->name_alloc << 1;
+
+		/* simulate g_realloc with slices */
+		mem = g_slice_alloc(new_size);
+		memcpy(mem, q->name, q->name_alloc);
+		g_slice_free1(q->name_alloc, q->name);
+
+		q->name = mem;
+		q->name_alloc = new_size;
 	}
 
 	if (q->name[0] != 0)
@@ -255,8 +285,8 @@ struct dnsres *dns_message(const char *buf, unsigned int buflen)
 	res->hdrq_len = buflen - ibuflen;
 
 	/* allocate output buffer */
-	res->alloc_len = MAX(4 * 1024, buflen);
-	obuf = res->buf = g_malloc0(res->alloc_len);
+	res->alloc_len = MAX(1024, buflen);
+	obuf = res->buf = g_slice_alloc(res->alloc_len);
 	g_assert(obuf != NULL);
 
 	/* copy hdr + query section into response packet */
