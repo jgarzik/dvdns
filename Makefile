@@ -17,16 +17,16 @@ default::	all
 
 distclean::	clean
 
-all::		dnsd dns.db
+all::		dvdnsd dns.db
 
-dnsd:		$(OBJS)
-	$(LD) $(LDFLAGS) -o dnsd $(OBJS) $(LIBS)
+dvdnsd:		$(OBJS)
+	$(LD) $(LDFLAGS) -o dvdnsd $(OBJS) $(LIBS)
 dns.db:		mk-dnsdb.sql
 	rm -f dns.db
 	sqlite3 dns.db < mk-dnsdb.sql
 
 clean:
-	rm -f dns.db dnsd $(OBJS)
+	rm -f dns.db dvdnsd $(OBJS)
 
 backend.o:	dnsd.h backend.c
 dns.o:		dnsd.h dns.c
