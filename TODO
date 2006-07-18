@@ -1,9 +1,6 @@
 
 In no particular order.
 
-* The Makefile was something I whipped up in five minutes.  It should
-use glib-config and pkgconfig for glib/gnet, but does not.
-
 * chroot
 
 * setuid/setgid
