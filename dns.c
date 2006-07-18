@@ -245,6 +245,14 @@ err_out:
 	goto out;
 }
 
+static void query_iter(void *data, void *user_data)
+{
+	struct dnsq *q = data;
+	struct dnsres *res = user_data;
+
+	backend_query(q, res);
+}
+
 struct dnsres *dns_message(const char *buf, unsigned int buflen)
 {
 	const struct dns_msg_hdr *hdr;
@@ -306,7 +314,7 @@ struct dnsres *dns_message(const char *buf, unsigned int buflen)
 	opcode = (hdr->opts[0] & hdr_opcode_mask) >> hdr_opcode_shift;
 	switch (opcode) {
 		case op_query:
-			g_list_foreach(res->queries, backend_query, res);
+			g_list_foreach(res->queries, query_iter, res);
 			if (res->query_rc != 0)		/* query failed */
 				goto err_out;
 			break;

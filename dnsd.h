@@ -87,7 +87,7 @@ struct backend_rr {
 /* backend.c */
 extern void backend_init(void);
 extern void backend_exit(void);
-extern void backend_query(void *data, void *user_data);
+extern void backend_query(struct dnsq *, struct dnsres *);
 
 /* dns.c */
 extern void dnsres_free(struct dnsres *res);
