@@ -2,12 +2,11 @@
 ## Toplevel Makefile.am
 ##
 
-INCLUDES	= @GLIB_CFLAGS@
+INCLUDES	= @GNET_CFLAGS@
 
-sbin_PROGRAMS	= skeleton
+sbin_PROGRAMS	= dvdnsd
 
-skeleton_SOURCES = skeleton.c
-skeleton_LDADD	= @GLIB_LIBS@
+dvdnsd_SOURCES	= backend.c dns.c dnsd.h main.c socket.c
+dvdnsd_LDADD	= @GNET_LIBS@ @SQLITE3_LIBS@
 
-EXTRA_DIST	= autogen.sh
-
+EXTRA_DIST	= autogen.sh TODO import-zone.pl mk-dnsdb.sql BIG_FAT_WARNING
