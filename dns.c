@@ -176,13 +176,16 @@ static void dnsq_append_label(struct dnsq *q, const char *buf, unsigned int bufl
 	strcat(q->name, label);
 }
 
-static int dns_read_questions(struct dnsres *res, const struct dns_msg_hdr *hdr,
-			      const char **ibuf_io, unsigned int *ibuflen_io)
+static int dns_parse_msg(struct dnsres *res, const struct dns_msg_hdr *hdr,
+			 const char *msg, unsigned int msg_len)
 {
 	unsigned int i;
-	const char *ibuf = *ibuf_io;
-	unsigned int ibuflen = *ibuflen_io;
+	const char *ibuf = msg;
+	unsigned int ibuflen = msg_len;
 	int rc = 0;
+
+	ibuf += sizeof(*hdr);
+	ibuflen -= sizeof(*hdr);
 
 	for (i = 0; i < g_ntohs(hdr->n_q); i++) {
 		struct dnsq *q;
@@ -236,8 +239,8 @@ static int dns_read_questions(struct dnsres *res, const struct dns_msg_hdr *hdr,
 	}
 
 out:
-	*ibuf_io = ibuf;
-	*ibuflen_io = ibuflen;
+	/* note length of hdr + query section */
+	res->hdrq_len = msg_len - ibuflen;
 	return rc;
 
 err_out:
@@ -259,8 +262,7 @@ struct dnsres *dns_message(const char *buf, unsigned int buflen)
 	struct dns_msg_hdr *ohdr;
 	struct dnsres *res;
 	char *obuf;
-	const char *ibuf;
-	unsigned int ibuflen, opcode;
+	unsigned int opcode;
 	int rc;
 
 	/* allocate result struct */
@@ -268,29 +270,20 @@ struct dnsres *dns_message(const char *buf, unsigned int buflen)
 	if (!res)
 		return NULL;
 
-	ibuf = buf;
-	ibuflen = buflen;
-
 	/* bail, if packet smaller than dns header */
 	if (buflen < sizeof(*hdr))
 		goto err_out;
 
 	hdr = (const struct dns_msg_hdr *) buf;
 
-	ibuf += sizeof(*hdr);
-	ibuflen -= sizeof(*hdr);
-
 	/* if this is a response packet, just return NULL (no resp to client) */
 	if (hdr->opts[0] & hdr_response)
 		goto err_out;
 
 	/* read list of questions */
-	rc = dns_read_questions(res, hdr, &ibuf, &ibuflen);
+	rc = dns_parse_msg(res, hdr, buf, buflen);
 	if (rc != 0)			/* invalid input */
 		goto err_out;
-
-	/* note length of hdr + query section */
-	res->hdrq_len = buflen - ibuflen;
 
 	/* allocate output buffer */
 	res->alloc_len = MAX(1024, buflen);
