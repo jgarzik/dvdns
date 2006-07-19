@@ -196,7 +196,7 @@ static int dns_parse_msg(struct dnsres *res, const struct dns_msg_hdr *hdr,
 
 		/* read list of labels */
 		while (1) {
-			unsigned int label_len;
+			unsigned int label_len, label_flags;
 
 			if (ibuflen == 0)
 				goto err_out;
@@ -206,19 +206,36 @@ static int dns_parse_msg(struct dnsres *res, const struct dns_msg_hdr *hdr,
 			ibuf++;
 			ibuflen--;
 
-			/* if label length zero, list terminates */
-			if (label_len == 0)
-				break;
+			/* move bits 7-6 to label_flags */
+			label_flags = label_len & 0xc0;
+			label_len &= 0x3f;
 
-			/* FIXME: pointer compression */
-			if (label_len > ibuflen || label_len > max_label_len)
+			/* bits 01 and 10 are reserved / not handled */
+			if (label_flags == 0x80 || label_flags == 0x40)
 				goto err_out;
 
-			/* copy label */
-			dnsq_append_label(q, ibuf, label_len);
+			/* pointer compression (offset-based labels) */
+			if (label_flags == 0xc0) {
+				/* FIXME */
+				goto err_out;
+			}
 
-			ibuf += label_len;
-			ibuflen -= label_len;
+			/* normal label */
+			else {
+				/* verify free space */
+				if (label_len > ibuflen)
+					goto err_out;
+
+				/* if label length zero, list terminates */
+				if (label_len == 0)
+					break;
+
+				/* copy label */
+				dnsq_append_label(q, ibuf, label_len);
+
+				ibuf += label_len;
+				ibuflen -= label_len;
+			}
 		}
 
 		/* read type, class */
