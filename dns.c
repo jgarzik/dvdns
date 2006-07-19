@@ -189,7 +189,7 @@ static int dns_parse_msg(struct dnsres *res, const struct dns_msg_hdr *hdr,
 
 	for (i = 0; i < g_ntohs(hdr->n_q); i++) {
 		struct dnsq *q;
-		uint16_t *tmpi;
+		uint16_t tmpi;
 
 		q = g_slice_new0(struct dnsq);
 		g_assert(q != NULL);
@@ -242,11 +242,11 @@ static int dns_parse_msg(struct dnsres *res, const struct dns_msg_hdr *hdr,
 		if (ibuflen < 4)
 			goto err_out;
 
-		tmpi = (uint16_t *) ibuf;
-		q->type = g_ntohs(*tmpi);
+		memcpy(&tmpi, ibuf, 2);
+		q->type = g_ntohs(tmpi);
 
-		tmpi = (uint16_t *) (ibuf + 2);
-		q->class = g_ntohs(*tmpi);
+		memcpy(&tmpi, ibuf + 2, 2);
+		q->class = g_ntohs(tmpi);
 
 		ibuf += 4;
 		ibuflen -= 4;
@@ -308,11 +308,11 @@ struct dnsres *dns_message(const char *buf, unsigned int buflen)
 	g_assert(obuf != NULL);
 
 	/* copy hdr + query section into response packet */
-	ohdr = (struct dns_msg_hdr *) obuf;
 	memcpy(obuf, buf, res->hdrq_len);
 	res->buflen = res->hdrq_len;
 
 	/* sanitize response header */
+	ohdr = (struct dns_msg_hdr *) obuf;
 	ohdr->opts[0] =
 		hdr_response |
 		(hdr->opts[0] & hdr_opcode_mask) |
