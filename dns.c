@@ -176,69 +176,147 @@ static void dnsq_append_label(struct dnsq *q, const char *buf, unsigned int bufl
 	strcat(q->name, label);
 }
 
+enum {
+	max_ptr_stack		= 32,
+};
+
+struct ptr_stack {
+	unsigned int		len;
+	unsigned int		ptr[max_ptr_stack];
+};
+
+static int in_ptr_history(struct ptr_stack *ps, unsigned int ptr)
+{
+	unsigned int len = ps->len;
+	unsigned int i;
+
+	for (i = 0; i < len; i++)
+		if (ps->ptr[i] == ptr)
+			return 1;
+
+	if (len == max_ptr_stack)
+		return 1;
+
+	ps->ptr[len] = ptr;
+	ps->len++;
+
+	return 0;
+}
+
+static int dns_parse_label(struct dnsq *q, const char *label,
+			   const char *msg, unsigned int msg_len)
+{
+	unsigned int idx = label - msg;
+	unsigned int free, saved_len = 0, ptr_chasing = 0;
+	const char *p;
+	struct ptr_stack ps;
+
+	ps.len = 0;
+
+	/* read list of labels */
+next_ptr:
+	p = &msg[idx];
+	free = msg_len - idx;
+	while (1) {
+		unsigned int label_len, label_flags;
+
+		if (free == 0)
+			goto err_out;
+
+		/* get label length */
+		label_len = *p;
+		p++;
+		free--;
+
+		/* move bits 7-6 to label_flags */
+		label_flags = label_len & 0xc0;
+		label_len &= 0x3f;
+
+		/* bits 01 and 10 are reserved / not handled */
+		if (label_flags == 0x80 || label_flags == 0x40)
+			goto err_out;
+
+		/* pointer compression (offset-based labels) */
+		if (label_flags == 0xc0) {
+			if (free == 0)
+				goto err_out;
+
+			idx = (label_len << 8) | (*p);
+			p++;
+			free--;
+
+			if (idx >= msg_len)
+				goto err_out;
+			if (in_ptr_history(&ps, idx))
+				goto err_out;
+
+			if (!ptr_chasing) {
+				ptr_chasing = 1;
+				saved_len = p - label;
+			}
+
+			goto next_ptr;
+		}
+
+		/* normal label */
+		else {
+			/* verify free space */
+			if (label_len > free)
+				goto err_out;
+
+			/* if label length zero, list terminates */
+			if (label_len == 0)
+				break;
+
+			/* copy label */
+			dnsq_append_label(q, p, label_len);
+
+			p += label_len;
+			free -= label_len;
+		}
+	}
+
+	if (ptr_chasing)
+		return saved_len;
+	return p - label;
+
+err_out:
+	return -1;
+}
+
 static int dns_parse_msg(struct dnsres *res, const struct dns_msg_hdr *hdr,
 			 const char *msg, unsigned int msg_len)
 {
 	unsigned int i;
 	const char *ibuf = msg;
 	unsigned int ibuflen = msg_len;
+	unsigned int n_q = g_ntohs(hdr->n_q);
 	int rc = 0;
 
 	ibuf += sizeof(*hdr);
 	ibuflen -= sizeof(*hdr);
 
-	for (i = 0; i < g_ntohs(hdr->n_q); i++) {
+	for (i = 0; i < n_q; i++) {
 		struct dnsq *q;
 		uint16_t tmpi;
+		int label_len;
 
 		q = g_slice_new0(struct dnsq);
 		g_assert(q != NULL);
 
-		/* read list of labels */
-		while (1) {
-			unsigned int label_len, label_flags;
+		/*
+		 * read label, with pointer decompression
+		 */
+		label_len = dns_parse_label(q, ibuf, msg, msg_len);
+		if (label_len < 0)
+			goto err_out;
 
-			if (ibuflen == 0)
-				goto err_out;
+		ibuf += label_len;
+		ibuflen -= label_len;
 
-			/* get label length */
-			label_len = *ibuf;
-			ibuf++;
-			ibuflen--;
-
-			/* move bits 7-6 to label_flags */
-			label_flags = label_len & 0xc0;
-			label_len &= 0x3f;
-
-			/* bits 01 and 10 are reserved / not handled */
-			if (label_flags == 0x80 || label_flags == 0x40)
-				goto err_out;
-
-			/* pointer compression (offset-based labels) */
-			if (label_flags == 0xc0) {
-				/* FIXME */
-				goto err_out;
-			}
-
-			/* normal label */
-			else {
-				/* verify free space */
-				if (label_len > ibuflen)
-					goto err_out;
-
-				/* if label length zero, list terminates */
-				if (label_len == 0)
-					break;
-
-				/* copy label */
-				dnsq_append_label(q, ibuf, label_len);
-
-				ibuf += label_len;
-				ibuflen -= label_len;
-			}
-		}
-
-		/* read type, class */
+		/*
+		 * read type, class
+		 */
 		if (ibuflen < 4)
 			goto err_out;
 
