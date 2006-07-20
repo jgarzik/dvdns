@@ -69,7 +69,7 @@ void backend_exit(void)
 	g_assert(rc == SQLITE_OK);
 }
 
-void backend_query(struct dnsq *q, struct dnsres *res)
+void backend_query(const struct dnsq *q, struct dnsres *res)
 {
 	int rc;
 	unsigned int idx, rows = 0;

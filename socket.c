@@ -36,7 +36,7 @@ struct client {
 static GUdpSocket *udpsock;
 
 
-static void udp_message(GUdpSocket *sock, GInetAddr *src,
+static void udp_message(GUdpSocket *sock, const GInetAddr *src,
 			const char *buf, unsigned int buflen)
 {
 	struct dnsres *res = dns_message(buf, buflen);

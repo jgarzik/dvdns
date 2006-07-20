@@ -39,28 +39,28 @@ static void dns_finalize(struct dnsres *res)
 	hdr->opts[0] |= hdr_auth;
 }
 
-static size_t dns_res_space(struct dnsres *res)
+static void dns_res_grow(struct dnsres *res, unsigned int buflen)
 {
-	return res->alloc_len - res->buflen;
+	size_t new_size = res->alloc_len;
+	void *mem;
+
+	do {
+		new_size = new_size << 1;
+	} while ((new_size - res->buflen) < buflen);
+
+	mem = g_slice_alloc(new_size);
+	memcpy(mem, res->buf, res->alloc_len);
+	g_slice_free1(res->alloc_len, res->buf);
+
+	res->buf = mem;
+	res->alloc_len = new_size;
 }
 
 static void dns_push_bytes(struct dnsres *res, const void *buf,
 			   unsigned int buflen)
 {
-	if (dns_res_space(res) < buflen) {
-		size_t new_size = res->alloc_len;
-		void *mem;
-
-		while (dns_res_space(res) < buflen)
-			new_size = new_size << 1;
-
-		mem = g_slice_alloc(new_size);
-		memcpy(mem, res->buf, res->alloc_len);
-		g_slice_free1(res->alloc_len, res->buf);
-
-		res->buf = mem;
-		res->alloc_len = new_size;
-	}
+	if ((res->alloc_len - res->buflen) < buflen)
+		dns_res_grow(res, buflen);
 
 	memcpy(res->buf + res->buflen, buf, buflen);
 	res->buflen += buflen;
@@ -343,14 +343,6 @@ err_out:
 	goto out;
 }
 
-static void query_iter(void *data, void *user_data)
-{
-	struct dnsq *q = data;
-	struct dnsres *res = user_data;
-
-	backend_query(q, res);
-}
-
 struct dnsres *dns_message(const char *buf, unsigned int buflen)
 {
 	const struct dns_msg_hdr *hdr;
@@ -402,7 +394,8 @@ struct dnsres *dns_message(const char *buf, unsigned int buflen)
 	opcode = (hdr->opts[0] & hdr_opcode_mask) >> hdr_opcode_shift;
 	switch (opcode) {
 		case op_query:
-			g_list_foreach(res->queries, query_iter, res);
+			g_list_foreach(res->queries,
+				       (GFunc) backend_query, res);
 			if (res->query_rc != 0)		/* query failed */
 				goto err_out;
 			break;
