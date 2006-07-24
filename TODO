@@ -8,16 +8,8 @@ In no particular order.
 * Use IP_PKTINFO with recvmsg()/sendmsg() to stamp the proper
   source addr on all outgoing UDP packets.
 
-* Listen on specific interfaces
-
-* Config file
-
 * think about problems wildcard DNS causes with current database scheme.
   is wildcard support even worth caring about?
-
-* Properly support too-large packets, and the DNS 'TC' truncation bit.
-
-* Use DNS label (pointer) compression for outgoing packets.
 
 * Return value checking needs vast improvement.  currently uses
   g_assert() for some potential runtime conditions.
@@ -27,4 +19,13 @@ In no particular order.
   necessary)
 
 * Add logging
+
+* DNS raw packet input, output
+	- Use DNS label (pointer) compression for outgoing packets.
+	- Output useful info to AUTHORITY, ADDITIONAL sections
+	- Properly support too-large packets, and the DNS 'TC' truncation bit.
+
+* Config file / setting
+	- listen on <all interfaces>, or a list of interfaces
+	- uid/gid for setuid/setgid
 
