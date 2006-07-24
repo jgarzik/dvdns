@@ -8,22 +8,23 @@ In no particular order.
 * Use IP_PKTINFO with recvmsg()/sendmsg() to stamp the proper
   source addr on all outgoing UDP packets.
 
-* listen on specific interfaces
+* Listen on specific interfaces
 
-* config file
+* Config file
 
 * think about problems wildcard DNS causes with current database scheme.
+  is wildcard support even worth caring about?
 
-* handle too-large answers (DNS's intentional packet truncation)
+* Properly support too-large packets, and the DNS 'TC' truncation bit.
 
-* handle DNS label compression correctly
+* Use DNS label (pointer) compression for outgoing packets.
 
-* return value checking needs vast improvement.  currently uses
+* Return value checking needs vast improvement.  currently uses
   g_assert() for some potential runtime conditions.
 
-* add checking for memory allocation failures (NOTE: check to see
+* Add checking for memory allocation failures (NOTE: check to see
   if GLib simply kills app on alloc failure, checks may not be
   necessary)
 
-* add logging
+* Add logging
 
