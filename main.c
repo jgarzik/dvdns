@@ -21,19 +21,26 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <syslog.h>
+#include <errno.h>
 #include <string.h>
 #include <glib.h>
 #include "dnsd.h"
 
 char db_fn[4096] = "dns.db";
+char pid_fn[4096] = "dvdnsd.pid";
 int dns_port = 9953;
 
 static void show_usage(const char *prog)
 {
 	fprintf(stderr, "usage: %s [options]\n"
 		"options:\n"
+		"  -f FILE		use sqlite database FILE\n"
 		"  -p PORT		bind to port PORT\n"
-		"  -f FILE		use sqlite database FILE\n",
+		"  -P FILE		Write daemon process id to FILE\n",
 		prog);
 	exit(1);
 }
@@ -64,11 +71,55 @@ static void parse_cmdline(int argc, char **argv)
 	}
 }
 
+static void syslogerr(const char *prefix)
+{
+	syslog(LOG_ERR, "%s: %s", prefix, strerror(errno));
+}
+
+static void write_pid_file(void)
+{
+	char str[32], *s;
+	size_t bytes;
+
+	sprintf(str, "%u\n", getpid());
+	s = str;
+	bytes = strlen(s);
+
+	int fd = open(pid_fn, O_WRONLY | O_CREAT | O_EXCL, 0666);
+	if (fd < 0) {
+		syslogerr("open pid");
+		exit(1);
+	}
+
+	while (bytes > 0) {
+		ssize_t rc = write(fd, s, bytes);
+		if (rc < 0) {
+			syslogerr("write pid");
+			exit(1);
+		}
+
+		bytes -= rc;
+		s += rc;
+	}
+
+	if (close(fd) < 0)
+		syslogerr("close pid");
+}
+
 int main (int argc, char *argv[])
 {
 	GMainLoop *loop;
 
 	parse_cmdline(argc, argv);
+
+	openlog("dvdnsd", LOG_PID, LOG_LOCAL3);
+
+	if (daemon(0, 0) < 0) {
+		syslogerr("daemon");
+		return 1;
+	}
+
+	write_pid_file();
 
 	loop = g_main_loop_new(NULL, FALSE);
 	g_assert(loop != NULL);
