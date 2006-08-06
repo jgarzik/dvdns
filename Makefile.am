@@ -2,6 +2,10 @@
 ## Toplevel Makefile.am
 ##
 
+ACLOCAL_AMFLAGS	= -I m4
+
+SUBDIRS		= m4
+
 INCLUDES	= @GNET_CFLAGS@
 
 sbin_PROGRAMS	= dvdnsd
