@@ -1,0 +1,13 @@
+#!/bin/sh
+
+if [ -f dvdnsd.pid ]
+then
+	echo "pid file found.  daemon still running?"
+	exit 1
+fi
+
+../dvdnsd -P dvdnsd.pid -f test.db
+
+sleep 4
+
+exit 0

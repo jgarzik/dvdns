@@ -1,0 +1,56 @@
+$ORIGIN .
+$TTL 604800	; 1 week
+yyz.us			IN SOA	ns1.dvmed.net. hostmaster.dvmed.net. (
+				2004082076 ; serial
+				43200      ; refresh (12 hours)
+				3600       ; retry (1 hour)
+				604800     ; expire (1 week)
+				86400      ; minimum (1 day)
+				)
+			NS	ns1.dvmed.net.
+			NS	ns1.infradead.org.
+			NS	ns2.dvmed.net.
+			NS	ns2.infradead.org.
+			NS	ns3.dvmed.net.
+$TTL 1000	; 16 minutes 40 seconds
+			A	69.61.125.42
+			A	207.36.208.214
+$ORIGIN yyz.us.
+bum			A	10.10.10.166
+gw			A	65.184.65.144
+			AAAA	2002:41b8:4190::1
+ich			A	10.10.10.50
+$TTL 3600	; 1 hour
+linux			A	207.36.208.214
+$TTL 1000	; 16 minutes 40 seconds
+marv			A	10.10.10.200
+ns1			A	207.234.209.181
+ns2			A	64.71.168.2
+			AAAA	2001:470:1f01:ffff::19d
+$TTL 2000	; 33 minutes 20 seconds
+ns3			A	67.18.176.187
+$TTL 604800	; 1 week
+pc210			A	10.10.10.210
+pc211			A	10.10.10.211
+pc212			A	10.10.10.212
+pc213			A	10.10.10.213
+pc214			A	10.10.10.214
+pc215			A	10.10.10.215
+pc216			A	10.10.10.216
+pc217			A	10.10.10.217
+pc218			A	10.10.10.218
+pc219			A	10.10.10.219
+pc220			A	10.10.10.220
+$TTL 1000	; 16 minutes 40 seconds
+			AAAA	2002:184a:9ba9:1010:210:a4ff:fe05:11b9
+ppc			A	10.10.10.10
+pretzel			A	10.10.10.1
+			AAAA	2002:41b8:4190::1
+sata			A	10.10.10.88
+			AAAA	2002:1819:16c5:1010:230:6eff:fe4c:4ac
+$TTL 2000	; 33 minutes 20 seconds
+srv1			A	207.234.209.181
+$TTL 1000	; 16 minutes 40 seconds
+svw			A	10.10.10.11
+$TTL 3600	; 1 hour
+viper			A	10.10.10.99

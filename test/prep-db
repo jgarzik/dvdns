@@ -1,0 +1,13 @@
+#!/bin/sh
+
+rm -f test.db
+sqlite3 test.db < $top_srcdir/mk-dnsdb.sql
+$top_srcdir/import-zone.pl test.db $srcdir/yyz.us
+
+if [ ! -f test.db ]
+then
+	echo "test database not found."
+	exit 1
+fi
+
+exit 0

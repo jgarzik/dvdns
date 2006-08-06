@@ -1,0 +1,13 @@
+#!/bin/sh
+
+if [ ! -f dvdnsd.pid ]
+then
+	echo no daemon pid file found.
+	exit 1
+fi
+
+kill `cat dvdnsd.pid`
+
+rm -f dvdnsd.pid
+
+exit 0

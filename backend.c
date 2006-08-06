@@ -18,7 +18,9 @@
  *
  */
 
+#include <stdlib.h>
 #include <string.h>
+#include <syslog.h>
 #include <sqlite3.h>
 #include "dnsd.h"
 
@@ -45,7 +47,10 @@ void backend_init(void)
 	int rc;
 
 	rc = sqlite3_open(db_fn, &db);
-	g_assert(rc == SQLITE_OK);
+	if (rc != SQLITE_OK) {
+		syslog(LOG_ERR, "sqlite3_open failed");
+		exit(1);
+	}
 
 	for (i = 0; i <= st_last; i++) {
 		const char *dummy;

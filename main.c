@@ -33,6 +33,7 @@
 char db_fn[4096] = "dns.db";
 char pid_fn[4096] = "dvdnsd.pid";
 int dns_port = 9953;
+static int foreground;
 
 static void show_usage(const char *prog)
 {
@@ -49,8 +50,14 @@ static void parse_cmdline(int argc, char **argv)
 {
 	int opt;
 
-	while ((opt = getopt(argc, argv, "hf:p:")) != -1) {
+	while ((opt = getopt(argc, argv, "hf:Fp:P:")) != -1) {
 		switch (opt) {
+			case 'f':
+				strcpy(db_fn, optarg);
+				break;
+			case 'F':
+				foreground = 1;
+				break;
 			case 'p':
 				if (atoi(optarg) > 0 &&
 				    atoi(optarg) < 65536)
@@ -61,8 +68,8 @@ static void parse_cmdline(int argc, char **argv)
 					exit(1);
 				}
 				break;
-			case 'f':
-				strcpy(db_fn, optarg);
+			case 'P':
+				strcpy(pid_fn, optarg);
 				break;
 			default:
 				show_usage(argv[0]);
@@ -114,7 +121,7 @@ int main (int argc, char *argv[])
 
 	openlog("dvdnsd", LOG_PID, LOG_LOCAL3);
 
-	if (daemon(0, 0) < 0) {
+	if ((!foreground) && (daemon(1, 0) < 0)) {
 		syslogerr("daemon");
 		return 1;
 	}
@@ -126,6 +133,8 @@ int main (int argc, char *argv[])
 
 	init_net();
 	backend_init();
+
+	syslog(LOG_INFO, "initialized");
 
 	g_main_loop_run(loop);
 
