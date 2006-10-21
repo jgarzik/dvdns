@@ -1,6 +1,6 @@
 
 EXTRA_DIST =			\
-	yyz.us			\
+	example.com.zone	\
 	prep-db			\
 	start-daemon		\
 	pid-exists		\

@@ -2,7 +2,7 @@
 
 rm -f test.db
 sqlite3 test.db < $top_srcdir/mk-dnsdb.sql
-$top_srcdir/import-zone.pl test.db $srcdir/yyz.us
+$top_srcdir/import-zone.pl test.db $srcdir/example.com.zone
 
 if [ ! -f test.db ]
 then
