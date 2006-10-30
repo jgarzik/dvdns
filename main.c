@@ -28,6 +28,7 @@
 #include <errno.h>
 #include <string.h>
 #include <glib.h>
+#include <gnet.h>
 #include "dnsd.h"
 
 char db_fn[4096] = "dns.db";
@@ -127,6 +128,8 @@ int main (int argc, char *argv[])
 	}
 
 	write_pid_file();
+
+	gnet_init();
 
 	loop = g_main_loop_new(NULL, FALSE);
 	g_assert(loop != NULL);
