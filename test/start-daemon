@@ -8,6 +8,6 @@ fi
 
 ../dvdnsd -P dvdnsd.pid -f test.db
 
-sleep 4
+sleep 3
 
 exit 0
