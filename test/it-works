@@ -1,0 +1,22 @@
+#!/usr/bin/perl -w
+
+use strict;
+use Net::DNS;
+
+my $res = Net::DNS::Resolver->new(
+	nameservers	=> [qw(127.0.0.1)],
+	searchlist	=> ['example.com'],
+	port		=> 9953,
+	recurse		=> 0,
+);
+exit(1) unless $res;
+
+my $packet = $res->query('pc210.example.com', 'A');
+exit(1) unless $packet;
+
+my @answer = $packet->answer;
+exit(1) unless (@answer);
+exit(1) unless ($#answer == 0);
+exit(1) unless ($answer[0]->rdatastr eq "10.10.10.210");
+
+exit(0);

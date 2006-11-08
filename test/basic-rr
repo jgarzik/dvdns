@@ -9,14 +9,59 @@ my $res = Net::DNS::Resolver->new(
 	port		=> 9953,
 	recurse		=> 0,
 );
-exit(1) unless $res;
+die "res" unless $res;
 
-my $packet = $res->query('pc210.example.com', 'A');
-exit(1) unless $packet;
+my $packet = $res->query('gw.example.com', 'ANY');
+die "packet" unless $packet;
 
 my @answer = $packet->answer;
-exit(1) unless (@answer);
-exit(1) unless ($#answer == 0);
-exit(1) unless ($answer[0]->rdatastr eq "10.10.10.210");
+die "answer" unless (@answer);
+die "answer == $#answer" unless ($#answer == 1);
+
+my ($a);
+foreach $a (@answer) {
+	if ($a->type eq "A") {
+		die "rdata-A" unless ($a->rdatastr eq "61.184.61.144");
+	}
+	elsif ($a->type eq "AAAA") {
+		die "rdata-AAAA" unless ($a->rdatastr eq '4008:41b8:4190:0:0:0:0:1');
+	}
+}
+
+undef $packet;
+
+$packet = $res->query('example.com', 'NS');
+die "NS packet" unless $packet;
+
+@answer = $packet->answer;
+die "NS answer" unless (@answer);
+die "NS answer == $#answer" unless ($#answer == 2);
+
+foreach $a (@answer) {
+	die "NS type" unless ($a->type eq 'NS');
+	die "NS name" unless ($a->rdatastr =~ /ns[1-3]\.example\.net/);
+}
+
+undef $packet;
+
+$packet = $res->query('example.com', 'SOA');
+die "SOA packet" unless $packet;
+
+@answer = $packet->answer;
+die "SOA answer" unless (@answer);
+die "SOA answer == $#answer" unless ($#answer == 0);
+
+$a = $answer[0];
+
+my $mname = $a->mname;
+die "SOA mname $mname" unless ($mname eq 'ns1.example.net');
+my $rname = $a->rname;
+die "SOA rname $rname" unless ($rname eq 'hostmaster.example.net');
+die "SOA serial" unless ($a->serial == 200408218);
+die "SOA refresh" unless ($a->refresh == 43200);
+die "SOA retry" unless ($a->retry == 3600);
+die "SOA expire" unless ($a->expire == 604800);
+die "SOA minimum" unless ($a->minimum == 86400);
+die "RR ttl" unless ($a->ttl == 604800);
 
 exit(0);

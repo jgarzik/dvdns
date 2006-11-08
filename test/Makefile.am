@@ -5,6 +5,7 @@ EXTRA_DIST =			\
 	start-daemon		\
 	pid-exists		\
 	daemon-running		\
+	it-works		\
 	basic-rr		\
 	stop-daemon
 
@@ -13,6 +14,7 @@ TESTS =				\
 	start-daemon		\
 	pid-exists		\
 	daemon-running		\
+	it-works		\
 	basic-rr		\
 	stop-daemon
 
