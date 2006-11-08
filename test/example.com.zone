@@ -1,7 +1,7 @@
 $ORIGIN .
 $TTL 604800	; 1 week
 example.com			IN SOA	ns1.example.net. hostmaster.example.net. (
-				200408218. ; serial
+				200408218  ; serial
 				43200      ; refresh (12 hours)
 				3600       ; retry (1 hour)
 				604800     ; expire (1 week)

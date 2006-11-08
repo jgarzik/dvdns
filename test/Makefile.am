@@ -5,6 +5,7 @@ EXTRA_DIST =			\
 	start-daemon		\
 	pid-exists		\
 	daemon-running		\
+	basic-rr		\
 	stop-daemon
 
 TESTS =				\
@@ -12,6 +13,7 @@ TESTS =				\
 	start-daemon		\
 	pid-exists		\
 	daemon-running		\
+	basic-rr		\
 	stop-daemon
 
 DISTCLEANFILES=test.db
