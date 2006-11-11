@@ -45,7 +45,7 @@ static void udp_message(GUdpSocket *sock, const GInetAddr *src,
 
 	if (res) {
 		gnet_udp_socket_send(sock, res->buf, res->buflen, src);
-		dnsres_free(res);
+		dnsres_unref(res);
 	}
 }
 
@@ -75,7 +75,7 @@ static void tcp_message(struct client *cli, const char *buf, unsigned int buflen
 		uint16_t msglen = g_htons(res->buflen);
 		gnet_conn_write(cli->conn, (gchar *) &msglen, 2);
 		gnet_conn_write(cli->conn, res->buf, res->buflen);
-		dnsres_free(res);
+		dnsres_unref(res);
 	}
 }
 

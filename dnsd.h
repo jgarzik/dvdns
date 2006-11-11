@@ -73,6 +73,7 @@ struct dnsres {
 	int			query_rc;
 
 	unsigned int		n_answers;
+	unsigned int		n_refs;
 };
 
 struct backend_rr {
@@ -96,7 +97,8 @@ extern void backend_exit(void);
 extern void backend_query(const struct dnsq *, struct dnsres *);
 
 /* dns.c */
-extern void dnsres_free(struct dnsres *res);
+static inline void dnsres_ref(struct dnsres *res) { res->n_refs++; }
+extern void dnsres_unref(struct dnsres *res);
 extern struct dnsres *dns_message(const char *buf, unsigned int buflen);
 extern void dns_push_rr(struct dnsres *res, const struct backend_rr *rr);
 extern void dns_set_rcode(struct dnsres *res, unsigned int code);

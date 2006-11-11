@@ -129,7 +129,7 @@ static void dnsres_free_q(void *data, void *user_data)
 	g_slice_free(struct dnsq, q);
 }
 
-void dnsres_free(struct dnsres *res)
+static void dnsres_free(struct dnsres *res)
 {
 	g_list_foreach(res->queries, dnsres_free_q, NULL);
 	g_list_free(res->queries);
@@ -137,9 +137,20 @@ void dnsres_free(struct dnsres *res)
 	g_slice_free(struct dnsres, res);
 }
 
+void dnsres_unref(struct dnsres *res)
+{
+	g_assert(res->n_refs > 0);
+
+	res->n_refs--;
+	if (!res->n_refs)
+		dnsres_free(res);
+}
+
 static struct dnsres *dnsres_alloc(void)
 {
 	struct dnsres *res = g_slice_new0(struct dnsres);
+	if (res)
+		res->n_refs = 1;
 	return res;
 }
 
@@ -410,7 +421,7 @@ struct dnsres *dns_message(const char *buf, unsigned int buflen)
 	return res;
 
 err_out:
-	dnsres_free(res);
+	dnsres_unref(res);
 	return NULL;
 }
 
