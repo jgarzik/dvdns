@@ -19,8 +19,81 @@
  */
 
 #include <string.h>
+#include <time.h>
 #include <glib.h>
 #include "dnsd.h"
+
+enum {
+	MSG_CACHE_EXPIRE		= 60,
+};
+
+static GQueue		*msg_expire_q;
+static GHashTable	*msg_cache;
+static time_t		current_time;
+
+
+/* "djb2"-derived hash function */
+static unsigned long blob_hash(unsigned long hash, const void *_buf, size_t buflen)
+{
+	const unsigned char *buf = _buf;
+	int c;
+
+	while (buflen > 0) {
+		c = *buf++;
+		buflen--;
+
+		hash = ((hash << 5) + hash) ^ c; /* hash * 33 ^ c */
+	}
+
+	return hash;
+}
+
+static void msg_cache_expire(void)
+{
+	struct dnsres *res;
+
+	while (1) {
+		res = g_queue_peek_head(msg_expire_q);
+		if (!res)
+			return;
+		if (current_time < res->mc_expire)
+			return;
+
+		g_queue_pop_head(msg_expire_q);
+		g_hash_table_remove(msg_cache, (gpointer) res->hash);
+	}
+}
+
+static struct dnsres *msg_cache_lookup(const char *buf, unsigned int buflen,
+				       int *expired, unsigned long *hash_out)
+{
+	struct dnsres *res;
+	unsigned long hash;
+
+	*expired = 0;
+
+	hash = blob_hash(BLOB_HASH_INIT, buf, buflen);
+	hash = blob_hash(hash, &buflen, sizeof(buflen));
+	*hash_out = hash;
+
+	res = g_hash_table_lookup(msg_cache, (gpointer) hash);
+	if (!res)
+		return NULL;
+
+	if (current_time < res->mc_expire)
+		return res;
+	
+	msg_cache_expire();
+	*expired = 1;
+	return NULL;
+}
+
+static void msg_cache_add(unsigned long hash, struct dnsres *res)
+{
+	g_hash_table_insert(msg_cache, (gpointer) hash, res);
+	g_queue_push_tail(msg_expire_q, res);
+
+}
 
 void dns_set_rcode(struct dnsres *res, unsigned int code)
 {
@@ -361,12 +434,26 @@ struct dnsres *dns_message(const char *buf, unsigned int buflen)
 	struct dnsres *res;
 	char *obuf;
 	unsigned int opcode;
-	int rc;
+	unsigned long hash;
+	int rc, expired;
+
+	current_time = time(NULL);
+
+	/* look up raw bytes in message cache */
+	res = msg_cache_lookup(buf, buflen, &expired, &hash);
+	if (res) {
+		srvstat.mc_hit++;
+		return dnsres_ref(res);
+	}
+
+	srvstat.mc_miss++;
 
 	/* allocate result struct */
 	res = dnsres_alloc();
 	if (!res)
 		return NULL;
+
+	res->mc_expire = current_time + MSG_CACHE_EXPIRE;
 
 	/* bail, if packet smaller than dns header */
 	if (buflen < sizeof(*hdr))
@@ -418,10 +505,25 @@ struct dnsres *dns_message(const char *buf, unsigned int buflen)
 
 	dns_finalize(res);
 
+	/* add to message cache */
+	if (!expired)
+		msg_cache_expire();
+	msg_cache_add(hash, dnsres_ref(res));
+
 	return res;
 
 err_out:
 	dnsres_unref(res);
 	return NULL;
+}
+
+void dns_init(void)
+{
+	msg_cache = g_hash_table_new_full(g_direct_hash, g_direct_equal,
+					  NULL, (GDestroyNotify) dnsres_unref);
+	g_assert(msg_cache != NULL);
+
+	msg_expire_q = g_queue_new();
+	g_assert(msg_expire_q != NULL);
 }
 

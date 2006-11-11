@@ -139,6 +139,7 @@ int main (int argc, char *argv[])
 
 	init_net();
 	backend_init();
+	dns_init();
 
 	syslog(LOG_INFO, "initialized");
 

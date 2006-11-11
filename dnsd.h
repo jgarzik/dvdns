@@ -22,6 +22,7 @@
 #define __DNSD_H__
 
 #include <stdint.h>
+#include <time.h>
 #include <glib.h>
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
@@ -36,6 +37,10 @@ enum {
 	rcode_notimpl		= 4,
 
 	op_query		= 0,
+};
+
+enum blob_hash_init_info {
+	BLOB_HASH_INIT		= 5381UL
 };
 
 struct dns_msg_hdr {
@@ -74,6 +79,9 @@ struct dnsres {
 
 	unsigned int		n_answers;
 	unsigned int		n_refs;
+
+	time_t			mc_expire;		/* cache expiration time */
+	unsigned long		hash;		/* raw message hash */
 };
 
 struct backend_rr {
@@ -89,6 +97,8 @@ struct dns_server_stats {
 	unsigned long		sql_q;		/* SQL queries */
 	unsigned long		udp_q;		/* UDP queries */
 	unsigned long		tcp_q;		/* TCP queries */
+	unsigned long		mc_hit;		/* msg cache hits */
+	unsigned long		mc_miss;	/* msg cache misses */
 };
 
 /* backend.c */
@@ -97,11 +107,16 @@ extern void backend_exit(void);
 extern void backend_query(const struct dnsq *, struct dnsres *);
 
 /* dns.c */
-static inline void dnsres_ref(struct dnsres *res) { res->n_refs++; }
+static inline struct dnsres *dnsres_ref(struct dnsres *res)
+{
+	res->n_refs++;
+	return res;
+}
 extern void dnsres_unref(struct dnsres *res);
 extern struct dnsres *dns_message(const char *buf, unsigned int buflen);
 extern void dns_push_rr(struct dnsres *res, const struct backend_rr *rr);
 extern void dns_set_rcode(struct dnsres *res, unsigned int code);
+extern void dns_init(void);
 
 /* socket.c */
 extern void init_net(void);
