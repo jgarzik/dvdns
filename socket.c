@@ -41,6 +41,8 @@ static void udp_message(GUdpSocket *sock, const GInetAddr *src,
 {
 	struct dnsres *res = dns_message(buf, buflen);
 
+	srvstat.udp_q++;
+
 	if (res) {
 		gnet_udp_socket_send(sock, res->buf, res->buflen, src);
 		dnsres_free(res);
@@ -66,6 +68,8 @@ static gboolean udp_rx (GIOChannel *source, GIOCondition condition,
 static void tcp_message(struct client *cli, const char *buf, unsigned int buflen)
 {
 	struct dnsres *res = dns_message(buf, buflen);
+
+	srvstat.tcp_q++;
 
 	if (res) {
 		uint16_t msglen = g_htons(res->buflen);

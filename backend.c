@@ -89,6 +89,8 @@ void backend_query(const struct dnsq *q, struct dnsres *res)
 	while (1) {
 		struct backend_rr rr;
 
+		srvstat.sql_q++;
+
 		/* execute SQL query */
 		rc = sqlite3_step(prep_stmts[idx]);
 		if (rc == SQLITE_DONE || rc == SQLITE_BUSY)

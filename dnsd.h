@@ -84,6 +84,12 @@ struct backend_rr {
 	unsigned int		rdata_len;
 };
 
+struct dns_server_stats {
+	unsigned long		sql_q;		/* SQL queries */
+	unsigned long		udp_q;		/* UDP queries */
+	unsigned long		tcp_q;		/* TCP queries */
+};
+
 /* backend.c */
 extern void backend_init(void);
 extern void backend_exit(void);
@@ -101,5 +107,6 @@ extern void init_net(void);
 /* main.c */
 extern int dns_port;
 extern char db_fn[];
+extern struct dns_server_stats srvstat;
 
 #endif /* __DNSD_H__ */

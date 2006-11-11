@@ -35,6 +35,7 @@ char db_fn[4096] = "dns.db";
 char pid_fn[4096] = "dvdnsd.pid";
 int dns_port = 9953;
 static int foreground;
+struct dns_server_stats srvstat;
 
 static void show_usage(const char *prog)
 {
@@ -117,6 +118,8 @@ static void write_pid_file(void)
 int main (int argc, char *argv[])
 {
 	GMainLoop *loop;
+
+	memset(&srvstat, 0, sizeof(srvstat));
 
 	parse_cmdline(argc, argv);
 
