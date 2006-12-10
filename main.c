@@ -29,7 +29,10 @@
 #include <string.h>
 #include <glib.h>
 #include <gnet.h>
+#include <argp.h>
 #include "dnsd.h"
+
+#define PROGRAM_NAME "dvdnsd"
 
 char db_fn[4096] = "dns.db";
 char pid_fn[4096] = "dvdnsd.pid";
@@ -37,47 +40,55 @@ int dns_port = 9953;
 static int foreground;
 struct dns_server_stats srvstat;
 
-static void show_usage(const char *prog)
-{
-	fprintf(stderr, "usage: %s [options]\n"
-		"options:\n"
-		"  -f FILE		use sqlite database FILE\n"
-		"  -p PORT		bind to port PORT\n"
-		"  -P FILE		Write daemon process id to FILE\n",
-		prog);
-	exit(1);
-}
+static const char doc[] =
+PROGRAM_NAME " - authoritative DNS server";
 
-static void parse_cmdline(int argc, char **argv)
-{
-	int opt;
+static struct argp_option options[] = {
+	{ "database", 'f', "FILE", 0,
+	  "use sqlite database FILE" },
+	{ "foreground", 'F', NULL, 0,
+	  "Run in foreground, do not fork" },
+	{ "port", 'p', "PORT", 0,
+	  "bind to port PORT" },
+	{ "pid", 'P', "FILE", 0,
+	  "Write daemon process id to FILE" },
 
-	while ((opt = getopt(argc, argv, "hf:Fp:P:")) != -1) {
-		switch (opt) {
-			case 'f':
-				strcpy(db_fn, optarg);
-				break;
-			case 'F':
-				foreground = 1;
-				break;
-			case 'p':
-				if (atoi(optarg) > 0 &&
-				    atoi(optarg) < 65536)
-					dns_port = atoi(optarg);
-				else {
-					fprintf(stderr, "invalid DNS port %s\n",
-						optarg);
-					exit(1);
-				}
-				break;
-			case 'P':
-				strcpy(pid_fn, optarg);
-				break;
-			default:
-				show_usage(argv[0]);
-				exit(1);
+	{ }
+};
+
+static error_t parse_opt (int key, char *arg, struct argp_state *state);
+static const struct argp argp = { options, parse_opt, NULL, doc };
+
+static error_t parse_opt (int key, char *arg, struct argp_state *state)
+{
+	switch(key) {
+	case 'f':
+		strcpy(db_fn, arg);
+		break;
+	case 'F':
+		foreground = 1;
+		break;
+	case 'p':
+		if (atoi(arg) > 0 && atoi(arg) < 65536)
+			dns_port = atoi(arg);
+		else {
+			fprintf(stderr, "invalid DNS port %s\n", arg);
+			argp_usage(state);
 		}
+		break;
+	case 'P':
+		strcpy(pid_fn, arg);
+		break;
+	case ARGP_KEY_ARG:
+		argp_usage(state);	/* too many args */
+		break;
+	case ARGP_KEY_END:
+		break;
+	default:
+		return ARGP_ERR_UNKNOWN;
 	}
+
+	return 0;
 }
 
 static void syslogerr(const char *prefix)
@@ -118,10 +129,15 @@ static void write_pid_file(void)
 int main (int argc, char *argv[])
 {
 	GMainLoop *loop;
+	error_t rc;
+
+	rc = argp_parse(&argp, argc, argv, 0, NULL, NULL);
+	if (rc) {
+		fprintf(stderr, "argp_parse failed: %s\n", strerror(rc));
+		return 1;
+	}
 
 	memset(&srvstat, 0, sizeof(srvstat));
-
-	parse_cmdline(argc, argv);
 
 	openlog("dvdnsd", LOG_PID, LOG_LOCAL3);
 
