@@ -105,16 +105,16 @@ static void write_pid_file(void)
 	s = str;
 	bytes = strlen(s);
 
-	int fd = open(pid_fn, O_WRONLY | O_CREAT | O_EXCL, 0666);
+	int fd = open(pid_fn, O_WRONLY | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
 	if (fd < 0) {
-		syslogerr("open pid");
+		syslogerr(pid_fn);
 		exit(1);
 	}
 
 	while (bytes > 0) {
 		ssize_t rc = write(fd, s, bytes);
 		if (rc < 0) {
-			syslogerr("write pid");
+			syslogerr("pid data write failed");
 			exit(1);
 		}
 
@@ -122,8 +122,10 @@ static void write_pid_file(void)
 		s += rc;
 	}
 
+	if (fsync(fd) < 0)
+		syslogerr("fsync pid file failed");
 	if (close(fd) < 0)
-		syslogerr("close pid");
+		syslogerr("close pid file failed");
 }
 
 int main (int argc, char *argv[])
