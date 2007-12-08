@@ -82,7 +82,7 @@ static struct dnsres *msg_cache_lookup(const char *buf, unsigned int buflen,
 
 	if (current_time < res->mc_expire)
 		return res;
-	
+
 	msg_cache_expire();
 	*expired = 1;
 	return NULL;
