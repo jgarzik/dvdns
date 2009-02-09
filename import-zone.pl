@@ -91,7 +91,7 @@ sub import_rr($) {
 	}
 
 	# build RR sql insert
-	my $sth = $dbh->prepare_cached('insert into rrs values (?,?,?,?,?)');
+	my $sth = $dbh->prepare('insert into rrs values (?,?,?,?,?)');
 	die "sql prep failed" unless $sth;
 
 	$sth->bind_param(1, $id, SQL_INTEGER);
