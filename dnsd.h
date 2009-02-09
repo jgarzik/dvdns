@@ -22,6 +22,7 @@
 #define __DNSD_H__
 
 #include <stdint.h>
+#include <stdbool.h>
 #include <time.h>
 #include <glib.h>
 

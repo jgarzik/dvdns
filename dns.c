@@ -25,6 +25,8 @@
 
 enum {
 	MSG_CACHE_EXPIRE		= 60,
+
+	MSG_CACHE_EXPIRE_WAIT		= 20,
 };
 
 static GQueue		*msg_expire_q;
@@ -65,12 +67,12 @@ static void msg_cache_expire(void)
 }
 
 static struct dnsres *msg_cache_lookup(const char *buf, unsigned int buflen,
-				       int *expired, unsigned long *hash_out)
+				       bool *expired, unsigned long *hash_out)
 {
 	struct dnsres *res;
 	unsigned long hash;
 
-	*expired = 0;
+	*expired = false;
 
 	hash = blob_hash(BLOB_HASH_INIT, buf, buflen);
 	hash = blob_hash(hash, &buflen, sizeof(buflen));
@@ -84,7 +86,7 @@ static struct dnsres *msg_cache_lookup(const char *buf, unsigned int buflen,
 		return res;
 
 	msg_cache_expire();
-	*expired = 1;
+	*expired = true;
 	return NULL;
 }
 
@@ -435,7 +437,9 @@ struct dnsres *dns_message(const char *buf, unsigned int buflen)
 	char *obuf;
 	unsigned int opcode;
 	unsigned long hash;
-	int rc, expired;
+	int rc;
+	bool expired;
+	static time_t next_expire;
 
 	current_time = time(NULL);
 
@@ -506,8 +510,10 @@ struct dnsres *dns_message(const char *buf, unsigned int buflen)
 	dns_finalize(res);
 
 	/* add to message cache */
-	if (!expired)
+	if (!expired && (current_time > next_expire)) {
 		msg_cache_expire();
+		next_expire = current_time + MSG_CACHE_EXPIRE_WAIT;
+	}
 	msg_cache_add(hash, dnsres_ref(res));
 
 	return res;
