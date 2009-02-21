@@ -43,6 +43,7 @@ dnl -----------------------------
 dnl Checks for required libraries
 dnl -----------------------------
 AC_CHECK_LIB(sqlite3, sqlite3_open, SQLITE3_LIBS=-lsqlite3, exit 1)
+AC_CHECK_LIB(argp, argp_parse, ARGP_LIBS=-largp)
 AC_PROG_PERL_MODULES(Net::DNS Net::DNS::ZoneFile::Fast DBD::SQLite,,exit 1)
 
 dnl -------------------------------------
@@ -61,6 +62,7 @@ AM_PATH_GLIB_2_0(2.0.0)
 AM_PATH_GNET_2_0(2.0.5)
 
 AC_SUBST(SQLITE3_LIBS)
+AC_SUBST(ARGP_LIBS)
 
 AC_CONFIG_FILES([Makefile m4/Makefile test/Makefile])
 AC_OUTPUT
