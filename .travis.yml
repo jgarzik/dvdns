@@ -1,0 +1,50 @@
+
+language: c
+
+compiler:
+  - clang
+  - gcc
+
+os:
+  - linux
+
+sudo: required
+
+env:
+  global:
+    - MAKEJOBS=-j3
+    - RUN_TESTS=false
+    - BASE_OUTDIR=$TRAVIS_BUILD_DIR/out
+    - PERL_CPANM_OPT="--notest --force"
+
+cache:
+  apt: true
+
+addons:
+  apt:
+    packages:
+      - pkg-config
+      - libsqlite3-dev
+      - libglib2.0-dev
+      - cpanminus
+
+before_install:
+  - sudo cpanm $PERL_CPANM_OPT Net::DNS
+  - sudo cpanm $PERL_CPANM_OPT Net::DNS::ZoneFile::Fast
+  - sudo cpanm $PERL_CPANM_OPT DBD::SQLite
+
+before_script:
+  - wget http://ftp.gnome.org/pub/GNOME/sources/gnet/2.0/gnet-2.0.8.tar.gz
+  - tar -xzvf gnet-2.0.8.tar.gz
+  - cd gnet-2.0.8 && ./configure --prefix=/usr && make -s && sudo make install && cd ..
+  - if [ -n "$USE_SHELL" ]; then export CONFIG_SHELL="$USE_SHELL"; fi
+  - test -n "$USE_SHELL" && eval '"$USE_SHELL" -c "./autogen.sh"' || ./autogen.sh
+
+script:
+  - OUTDIR=$BASE_OUTDIR/$TRAVIS_PULL_REQUEST/$TRAVIS_JOB_NUMBER-$HOST
+  - DVDNS_CONFIG_ALL="--prefix=$TRAVIS_BUILD_DIR/depends/$HOST --bindir=$OUTDIR/bin --libdir=$OUTDIR/lib"
+  - ./configure --cache-file=config.cache $DVDNS_CONFIG_ALL $DVDNS_CONFIG || ( cat config.log && false)
+  - make -s $MAKEJOBS $GOAL || ( echo "Build failure. Verbose build follows." && make $GOAL ; false )
+  - export LD_LIBRARY_PATH=$TRAVIS_BUILD_DIR/depends/$HOST/lib
+  - if [ "$RUN_TESTS" = "true" ]; then make check; fi
+
